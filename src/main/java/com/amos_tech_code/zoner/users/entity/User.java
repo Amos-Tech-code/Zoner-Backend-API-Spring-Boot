@@ -38,7 +38,7 @@ public class User extends BaseEntity {
     @Column(unique = true, length = 50)
     private String username;
 
-    @Column(nullable = false, length = 100)
+    @Column(length = 100)
     private String displayName;
 
     @Column(length = 500)

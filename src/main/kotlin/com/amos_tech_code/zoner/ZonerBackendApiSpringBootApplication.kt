@@ -2,9 +2,11 @@ package com.amos_tech_code.zoner
 
 import io.github.cdimascio.dotenv.Dotenv
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import org.springframework.boot.runApplication
 
 @SpringBootApplication
+@ConfigurationPropertiesScan
 class ZonerBackendApiSpringBootApplication
 
 fun main(args: Array<String>) {

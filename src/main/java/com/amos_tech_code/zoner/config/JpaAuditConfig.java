@@ -1,4 +1,4 @@
-package com.amos_tech_code.zoner.common.config;
+package com.amos_tech_code.zoner.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
