@@ -8,7 +8,7 @@ CREATE TABLE users
 
     username              VARCHAR(50),
 
-    display_name          VARCHAR(100) NOT NULL,
+    display_name          VARCHAR(100),
 
     bio                   TEXT,
 

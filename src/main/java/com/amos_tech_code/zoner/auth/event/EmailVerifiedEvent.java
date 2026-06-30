@@ -2,13 +2,8 @@ package com.amos_tech_code.zoner.auth.event;
 
 import java.util.UUID;
 
-public record UserRegisteredEvent(
-
+public record EmailVerifiedEvent(
         UUID userId,
-
-        String email,
-
-        String otp
-
+        String email
 ) {
 }

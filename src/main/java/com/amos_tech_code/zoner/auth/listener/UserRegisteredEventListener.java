@@ -27,7 +27,7 @@ public class UserRegisteredEventListener {
 
         emailService.sendVerificationCode(
                 event.email(),
-                event.verificationCode()
+                event.otp()
         );
     }
 

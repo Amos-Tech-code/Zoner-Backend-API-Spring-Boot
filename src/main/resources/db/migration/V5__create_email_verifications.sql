@@ -37,3 +37,7 @@ CREATE INDEX idx_email_verifications_verified_at
 
 CREATE INDEX idx_email_verifications_deleted_at
     ON email_verifications(deleted_at);
+
+CREATE UNIQUE INDEX ux_email_verification_active
+    ON email_verifications(user_id)
+    WHERE verified_at IS NULL;

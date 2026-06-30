@@ -10,10 +10,8 @@ import java.util.UUID;
 
 public interface EmailVerificationRepository extends JpaRepository<EmailVerification, UUID> {
 
-    Optional<EmailVerification> findTopByUserOrderByCreatedAtDesc(User user);
-
-    Optional<EmailVerification> findTopByUserAndVerifiedAtIsNullOrderByCreatedAtDesc(
-            User user
+    Optional<EmailVerification> findTopByUserIdAndVerifiedAtIsNullOrderByCreatedAtDesc(
+            UUID userId
     );
 
     void deleteByExpiresAtBefore(Instant instant);
