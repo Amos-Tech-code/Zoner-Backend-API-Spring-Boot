@@ -1,8 +1,6 @@
 package com.amos_tech_code.zoner.auth.mapper;
 
-import com.amos_tech_code.zoner.auth.dto.response.CompleteProfileResponse;
-import com.amos_tech_code.zoner.auth.dto.response.RegisterResponse;
-import com.amos_tech_code.zoner.auth.dto.response.VerifyEmailResponse;
+import com.amos_tech_code.zoner.auth.dto.response.*;
 import com.amos_tech_code.zoner.users.entity.User;
 
 import java.util.List;
@@ -71,6 +69,31 @@ public final class AuthMapper {
                 "Username is already taken."
         );
 
+    }
+
+    public static UserResponse toUserResponse(User user) {
+        return new UserResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getUsername(),
+                user.getDisplayName(),
+                user.getRole(),
+                user.getRegistrationStage(),
+                user.isEmailVerified(),
+                user.getBusinessProfile() != null
+        );
+    }
+
+    public static LoginResponse toLoginResponse(
+            String accessToken,
+            String refreshToken,
+            User user
+    ) {
+        return new LoginResponse(
+                accessToken,
+                refreshToken,
+                toUserResponse(user)
+        );
     }
 
 }

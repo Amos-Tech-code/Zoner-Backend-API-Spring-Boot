@@ -1,24 +1,19 @@
 package com.amos_tech_code.zoner.auth.service.impl;
 
+import com.amos_tech_code.zoner.auth.dto.internal.RefreshTokenResult;
 import com.amos_tech_code.zoner.auth.dto.request.*;
 import com.amos_tech_code.zoner.auth.dto.response.CompleteProfileResponse;
 import com.amos_tech_code.zoner.auth.dto.response.VerifyEmailResponse;
 import com.amos_tech_code.zoner.auth.event.EmailVerifiedEvent;
-import com.amos_tech_code.zoner.common.exception.InvalidVerificationCodeException;
-import com.amos_tech_code.zoner.common.exception.ResourceNotFoundException;
-import com.amos_tech_code.zoner.config.properties.AuthProperties;
+import com.amos_tech_code.zoner.auth.service.*;
+import com.amos_tech_code.zoner.common.exception.*;
 import com.amos_tech_code.zoner.auth.dto.response.LoginResponse;
 import com.amos_tech_code.zoner.auth.dto.response.RegisterResponse;
 import com.amos_tech_code.zoner.auth.entity.AuthAccount;
 import com.amos_tech_code.zoner.auth.entity.EmailVerification;
-import com.amos_tech_code.zoner.auth.event.UserRegisteredEvent;
 import com.amos_tech_code.zoner.auth.mapper.AuthMapper;
 import com.amos_tech_code.zoner.auth.repository.AuthAccountRepository;
-import com.amos_tech_code.zoner.auth.repository.EmailVerificationRepository;
-import com.amos_tech_code.zoner.auth.service.OtpService;
-import com.amos_tech_code.zoner.auth.service.PasswordService;
 import com.amos_tech_code.zoner.common.enums.Visibility;
-import com.amos_tech_code.zoner.common.exception.DuplicateResourceException;
 import com.amos_tech_code.zoner.users.entity.User;
 import com.amos_tech_code.zoner.users.enums.AccountStatus;
 import com.amos_tech_code.zoner.users.enums.AuthProvider;
@@ -26,16 +21,16 @@ import com.amos_tech_code.zoner.users.enums.RegistrationStage;
 import com.amos_tech_code.zoner.users.enums.Role;
 import com.amos_tech_code.zoner.users.repository.UserRepository;
 import com.amos_tech_code.zoner.users.service.UsernameService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import com.amos_tech_code.zoner.auth.service.AuthService;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Propagation;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -48,19 +43,19 @@ public class AuthServiceImpl implements AuthService {
 
     private final AuthAccountRepository authAccountRepository;
 
-    private final EmailVerificationRepository emailVerificationRepository;
-
     private final PasswordService passwordService;
 
-    private final OtpService otpService;
+    private final EmailVerificationService emailVerificationService;
+
+    private final UsernameService usernameService;
 
     private final ApplicationEventPublisher eventPublisher;
 
-    private final AuthProperties authProperties;
-
     private final Clock clock;
 
-    private final UsernameService usernameService;
+    private final JwtService jwtService;
+
+    private final RefreshTokenService refreshTokenService;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -80,10 +75,14 @@ public class AuthServiceImpl implements AuthService {
                 );
             }
 
-            return resendVerificationForExistingUser(user);
+            emailVerificationService.resendVerification(user);
+
+            return AuthMapper.toRegisterResponse(
+                    user,
+                    "A new verification code has been sent to your email."
+            );
         }
 
-        // Create user
         User user = User.builder()
                 .email(request.email())
                 .passwordHash(
@@ -94,15 +93,14 @@ public class AuthServiceImpl implements AuthService {
                         RegistrationStage.EMAIL_SUBMITTED
                 )
                 .accountStatus(AccountStatus.PENDING)
+                .visibility(Visibility.PUBLIC)
                 .emailVerified(false)
                 .notificationsEnabled(true)
                 .twoFactorEnabled(false)
-                .visibility(Visibility.PUBLIC)
                 .build();
 
         user = userRepository.save(user);
 
-        // Create auth account
         AuthAccount authAccount =
                 AuthAccount.builder()
                         .user(user)
@@ -113,93 +111,13 @@ public class AuthServiceImpl implements AuthService {
 
         authAccountRepository.save(authAccount);
 
-        log.info("User {} created successfully", user.getId());
+        emailVerificationService.createVerification(user);
 
-        // Generate OTP
-        String otp = otpService.generateOtp();
+        log.info("User {} registered successfully.", user.getId());
 
-        String otpHash = passwordService.hash(otp);
-
-        // Create email verification
-        EmailVerification verification =
-                EmailVerification.builder()
-                        .user(user)
-                        .verificationCodeHash(otpHash)
-                        .expiresAt(
-                                Instant.now(clock).plus(
-                                        authProperties.getVerificationCodeExpiry()
-                                )
-                        )
-                        .attempts(0)
-                        .verifiedAt(null)
-                        .build();
-
-        emailVerificationRepository.save(
-                verification
-        );
-
-        // Publish event for sending verification email
-        eventPublisher.publishEvent(
-                new UserRegisteredEvent(
-                        user.getId(),
-                        user.getEmail(),
-                        otp
-                )
-        );
-
-        // Return response
         return AuthMapper.toRegisterResponse(
                 user,
                 "A verification code has been sent to your email."
-        );
-
-    }
-
-    private RegisterResponse resendVerificationForExistingUser(User user) {
-
-        log.info(
-                "Resending verification email to existing unverified user {}",
-                user.getEmail()
-        );
-
-        // Find the latest one
-        EmailVerification verification =
-                emailVerificationRepository
-                        .findTopByUserIdAndVerifiedAtIsNullOrderByCreatedAtDesc(
-                                user.getId()
-                        )
-                        .orElseThrow();
-
-        // Generate a new code
-        String verificationCode = otpService.generateOtp();
-
-        verification.setVerificationCodeHash(
-                passwordService.hash(verificationCode)
-        );
-
-        verification.setExpiresAt(
-                Instant.now(clock)
-                        .plus(authProperties.getVerificationCodeExpiry())
-        );
-
-        verification.setAttempts(0);
-
-        verification.setVerifiedAt(null);
-
-        emailVerificationRepository.save(verification);
-
-        eventPublisher.publishEvent(
-                new UserRegisteredEvent(
-                        user.getId(),
-                        user.getEmail(),
-                        verificationCode
-                )
-        );
-
-        // Return response
-        return AuthMapper.toRegisterResponse(
-                user,
-                "A new verification code has been sent to your email."
         );
     }
 
@@ -209,11 +127,11 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository
                 .findByEmailAndDeletedAtIsNull(request.email())
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found.")
-                );
+                        new ResourceNotFoundException(
+                                "User not found."
+                        ));
 
-        if(user.isEmailVerified()) {
-            log.info("Email {} already verified.", user.getEmail());
+        if (user.isEmailVerified()) {
 
             return AuthMapper.toVerifyEmailResponse(
                     user,
@@ -222,48 +140,45 @@ public class AuthServiceImpl implements AuthService {
         }
 
         EmailVerification verification =
-                emailVerificationRepository
-                        .findTopByUserIdAndVerifiedAtIsNullOrderByCreatedAtDesc(user.getId())
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException("No active verification found.")
-                        );
+                emailVerificationService.getActiveVerification(user);
 
         if (verification.getExpiresAt().isBefore(Instant.now(clock))) {
 
             throw new InvalidVerificationCodeException(
                     "Verification code has expired."
             );
-
         }
 
-        if (verification.getAttempts() >= authProperties.getMaxVerificationAttempts()) {
+        if (verification.getAttempts() >= 5) {
 
             throw new InvalidVerificationCodeException(
                     "Maximum verification attempts exceeded."
             );
-
         }
 
-        boolean matches =
-                passwordService.matches(request.code(), verification.getVerificationCodeHash());
+        boolean matches = passwordService.matches(
+                request.code(),
+                verification.getVerificationCodeHash()
+        );
 
         if (!matches) {
-            saveVerificationAttempts(verification); // Call the new method to save attempts
+
+            emailVerificationService.incrementAttempts(
+                    verification
+            );
 
             throw new InvalidVerificationCodeException(
                     "Invalid verification code."
             );
         }
 
-        verification.setVerifiedAt(Instant.now(clock));
-
-        emailVerificationRepository.save(verification);
+        emailVerificationService.markVerified(verification);
 
         user.setEmailVerified(true);
-
-        user.setRegistrationStage(RegistrationStage.EMAIL_VERIFIED);
-
         user.setAccountStatus(AccountStatus.ACTIVE);
+        user.setRegistrationStage(
+                RegistrationStage.EMAIL_VERIFIED
+        );
 
         userRepository.save(user);
 
@@ -278,19 +193,27 @@ public class AuthServiceImpl implements AuthService {
                 user,
                 "Email verified successfully."
         );
-
-    }
-
-    // New method to increment and save verification attempts in a new transaction
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void saveVerificationAttempts(EmailVerification verification) {
-        verification.setAttempts(verification.getAttempts() + 1);
-        emailVerificationRepository.save(verification);
     }
 
     @Override
-    public void resendVerificationCode(ResendVerificationRequest request) {
+    public RegisterResponse resendVerificationCode(
+            ResendVerificationRequest request
+    ) {
 
+        User user = userRepository
+                .findByEmailAndDeletedAtIsNull(request.email())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found."
+                        ));
+
+        if (user.isEmailVerified()) {
+            throw new DuplicateResourceException(
+                    "Email has already been verified."
+            );
+        }
+
+        return emailVerificationService.resendVerification(user);
     }
 
     @Override
@@ -303,8 +226,9 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository
                 .findByEmailAndDeletedAtIsNull(request.email())
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found.")
-                );
+                        new ResourceNotFoundException(
+                                "User not found."
+                        ));
 
         if (!user.isEmailVerified()) {
             throw new IllegalStateException(
@@ -312,10 +236,10 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
-        if (user.getRegistrationStage() ==
-                RegistrationStage.PROFILE_COMPLETED
-                || user.getRegistrationStage() ==
-                RegistrationStage.BUSINESS_ADDED) {
+        if (user.getRegistrationStage()
+                == RegistrationStage.PROFILE_COMPLETED
+                || user.getRegistrationStage()
+                == RegistrationStage.BUSINESS_ADDED) {
 
             return AuthMapper.toCompleteProfileResponse(
                     user,
@@ -323,7 +247,9 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
-        if (!usernameService.isAvailable(request.username())) {
+        if (!usernameService.isAvailable(
+                request.username()
+        )) {
 
             return AuthMapper.usernameUnavailable(
                     user,
@@ -334,7 +260,9 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
-        user.setDisplayName(request.displayName());
+        user.setDisplayName(
+                request.displayName()
+        );
 
         user.setUsername(
                 request.username()
@@ -348,7 +276,9 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(user);
 
-        log.info("Profile completed successfully for user {}", user.getId()
+        log.info(
+                "Profile completed successfully for user {}",
+                user.getId()
         );
 
         return AuthMapper.toCompleteProfileResponse(
@@ -358,8 +288,92 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public LoginResponse login(LoginRequest request) {
-        return null;
+    public LoginResponse login(
+            LoginRequest request,
+            HttpServletRequest httpRequest
+    ) {
+
+        User user = userRepository
+                .findByEmailAndDeletedAtIsNull(request.email())
+                .orElseThrow(() ->
+                        new InvalidCredentialsException(
+                                "Invalid email or password."
+                        ));
+
+        if (!user.isEmailVerified()) {
+            throw new EmailNotVerifiedException(
+                    "Please verify your email first."
+            );
+        }
+
+        if (user.getAccountStatus() != AccountStatus.ACTIVE) {
+            throw new InvalidAccountStateException(
+                    "Your account is not active."
+            );
+        }
+
+        if (!passwordService.matches(
+                request.password(),
+                user.getPasswordHash()
+        )) {
+
+            throw new InvalidCredentialsException(
+                    "Invalid email or password."
+            );
+        }
+
+        refreshTokenService.revokeActiveSession(
+                user.getId(),
+                request.deviceId()
+        );
+
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        String ipAddress = extractClientIp(httpRequest);
+
+        RefreshTokenResult refreshResult =
+                refreshTokenService.create(
+                        user,
+                        request,
+                        userAgent,
+                        ipAddress
+                );
+
+        Map<String, Object> claims = Map.of(
+                "role", user.getRole().name(),
+                "registrationStage", user.getRegistrationStage().name()
+        );
+
+        String accessToken =
+                jwtService.generateAccessToken(
+                        user.getId(),
+                        user.getEmail(),
+                        claims
+                );
+
+        log.info(
+                "User {} logged in successfully.",
+                user.getEmail()
+        );
+
+        return AuthMapper.toLoginResponse(
+                accessToken,
+                refreshResult.rawToken(),
+                user
+        );
+    }
+
+    private String extractClientIp(HttpServletRequest request) {
+
+        String forwarded = request.getHeader("X-Forwarded-For");
+
+        if (forwarded != null && !forwarded.isBlank()) {
+
+            return forwarded.split(",")[0].trim();
+
+        }
+
+        return request.getRemoteAddr();
     }
 
 }

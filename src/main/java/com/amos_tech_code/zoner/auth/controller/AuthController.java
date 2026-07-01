@@ -2,6 +2,7 @@ package com.amos_tech_code.zoner.auth.controller;
 
 import com.amos_tech_code.zoner.auth.dto.request.CompleteProfileRequest;
 import com.amos_tech_code.zoner.auth.dto.request.RegisterRequest;
+import com.amos_tech_code.zoner.auth.dto.request.ResendVerificationRequest;
 import com.amos_tech_code.zoner.auth.dto.request.VerifyEmailRequest;
 import com.amos_tech_code.zoner.auth.dto.response.CompleteProfileResponse;
 import com.amos_tech_code.zoner.auth.dto.response.RegisterResponse;
@@ -39,11 +40,12 @@ public class AuthController {
     }
 
     @PostMapping("/resend-verify-email")
-    public ResponseEntity<VerifyEmailResponse> resendVerifyEmail(
-            @Valid @RequestBody VerifyEmailRequest request
+    public ResponseEntity<RegisterResponse> resendVerifyEmail(
+            @Valid @RequestBody ResendVerificationRequest request
     ) {
+        RegisterResponse response = authService.resendVerificationCode(request);
 
-        return null;
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/complete-profile")
@@ -51,9 +53,8 @@ public class AuthController {
             @Valid @RequestBody CompleteProfileRequest request
     ) {
 
-        return ResponseEntity.ok(
-                authService.completeProfile(request)
-        );
+        return ResponseEntity.ok(authService.completeProfile(request));
+
     }
 
 }
