@@ -23,4 +23,8 @@ public interface RefreshTokenService {
 
     void revoke(RefreshToken refreshToken);
 
+    RefreshToken findActive(UUID sessionId);
+
+    void updateLastUsed(RefreshToken refreshToken);
+
 }

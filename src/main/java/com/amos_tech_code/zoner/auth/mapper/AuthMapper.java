@@ -86,11 +86,13 @@ public final class AuthMapper {
 
     public static LoginResponse toLoginResponse(
             String accessToken,
+            Long expiresIn,
             String refreshToken,
             User user
     ) {
         return new LoginResponse(
                 accessToken,
+                expiresIn,
                 refreshToken,
                 toUserResponse(user)
         );

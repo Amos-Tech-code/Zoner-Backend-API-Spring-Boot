@@ -4,7 +4,7 @@ CREATE TABLE refresh_tokens
 
     user_id         UUID NOT NULL,
 
-    token_hash      VARCHAR(255) NOT NULL,
+    token_hash      VARCHAR(64) NOT NULL,
 
     device_id       VARCHAR(255),
 
@@ -21,14 +21,6 @@ CREATE TABLE refresh_tokens
     revoked_at      TIMESTAMPTZ,
 
     last_used_at    TIMESTAMPTZ,
-
-    created_at      TIMESTAMPTZ NOT NULL,
-
-    updated_at      TIMESTAMPTZ NOT NULL,
-
-    deleted_at      TIMESTAMPTZ,
-
-    version         BIGINT NOT NULL DEFAULT 0,
 
     CONSTRAINT fk_refresh_tokens_user
         FOREIGN KEY (user_id)

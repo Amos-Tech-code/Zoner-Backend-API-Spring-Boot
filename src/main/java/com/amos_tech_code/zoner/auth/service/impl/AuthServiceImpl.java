@@ -4,6 +4,7 @@ import com.amos_tech_code.zoner.auth.dto.internal.RefreshTokenResult;
 import com.amos_tech_code.zoner.auth.dto.request.*;
 import com.amos_tech_code.zoner.auth.dto.response.CompleteProfileResponse;
 import com.amos_tech_code.zoner.auth.dto.response.VerifyEmailResponse;
+import com.amos_tech_code.zoner.auth.entity.RefreshToken;
 import com.amos_tech_code.zoner.auth.event.EmailVerifiedEvent;
 import com.amos_tech_code.zoner.auth.service.*;
 import com.amos_tech_code.zoner.common.exception.*;
@@ -14,6 +15,7 @@ import com.amos_tech_code.zoner.auth.entity.EmailVerification;
 import com.amos_tech_code.zoner.auth.mapper.AuthMapper;
 import com.amos_tech_code.zoner.auth.repository.AuthAccountRepository;
 import com.amos_tech_code.zoner.common.enums.Visibility;
+import com.amos_tech_code.zoner.config.properties.JwtProperties;
 import com.amos_tech_code.zoner.users.entity.User;
 import com.amos_tech_code.zoner.users.enums.AccountStatus;
 import com.amos_tech_code.zoner.users.enums.AuthProvider;
@@ -32,6 +34,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -54,6 +57,8 @@ public class AuthServiceImpl implements AuthService {
     private final Clock clock;
 
     private final JwtService jwtService;
+
+    private final JwtProperties jwtProperties;
 
     private final RefreshTokenService refreshTokenService;
 
@@ -358,9 +363,79 @@ public class AuthServiceImpl implements AuthService {
 
         return AuthMapper.toLoginResponse(
                 accessToken,
+                jwtProperties.getAccessTokenExpiration().getSeconds(),
                 refreshResult.rawToken(),
                 user
         );
+    }
+
+    @Override
+    public LoginResponse refresh(
+            RefreshTokenRequest request
+    ) {
+
+        String refreshToken = request.refreshToken();
+
+        // 1. Validate JWT
+        if (!jwtService.isTokenValid(refreshToken)) {
+            throw new InvalidTokenException(
+                    "Invalid refresh token."
+            );
+        }
+
+        // 2. Extract IDs from JWT
+        UUID userId = jwtService.extractUserId(refreshToken);
+
+        UUID sessionId = jwtService.extractSessionId(refreshToken);
+
+        // 3. Validate stored session
+        RefreshToken storedToken =
+                refreshTokenService.findActive(sessionId);
+
+        // 4. Verify user
+        User user =
+                userRepository
+                        .findByIdAndDeletedAtIsNull(userId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "User not found."
+                                ));
+
+        if (!user.isEmailVerified()) {
+            throw new UnauthorizedException(
+                    "Email not verified."
+            );
+        }
+
+        if (user.getAccountStatus() != AccountStatus.ACTIVE) {
+            throw new UnauthorizedException(
+                    "Account is inactive."
+            );
+        }
+
+        // 5. Update session activity
+        refreshTokenService.updateLastUsed(
+                storedToken
+        );
+
+        // 6. Create new access token
+        String accessToken =
+                jwtService.generateAccessToken(
+                        user.getId(),
+                        user.getEmail(),
+                        Map.of(
+                                "role", user.getRole().name()
+                        )
+                );
+
+        // 7. Return same refresh token for now
+        return AuthMapper.toLoginResponse(
+                accessToken,
+                jwtProperties.getAccessTokenExpiration().getSeconds(),
+                refreshToken,
+                user
+        );
+
     }
 
     private String extractClientIp(HttpServletRequest request) {

@@ -1,13 +1,12 @@
 package com.amos_tech_code.zoner.auth.controller;
 
-import com.amos_tech_code.zoner.auth.dto.request.CompleteProfileRequest;
-import com.amos_tech_code.zoner.auth.dto.request.RegisterRequest;
-import com.amos_tech_code.zoner.auth.dto.request.ResendVerificationRequest;
-import com.amos_tech_code.zoner.auth.dto.request.VerifyEmailRequest;
+import com.amos_tech_code.zoner.auth.dto.request.*;
 import com.amos_tech_code.zoner.auth.dto.response.CompleteProfileResponse;
+import com.amos_tech_code.zoner.auth.dto.response.LoginResponse;
 import com.amos_tech_code.zoner.auth.dto.response.RegisterResponse;
 import com.amos_tech_code.zoner.auth.dto.response.VerifyEmailResponse;
 import com.amos_tech_code.zoner.auth.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -55,6 +54,23 @@ public class AuthController {
 
         return ResponseEntity.ok(authService.completeProfile(request));
 
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest
+    ) {
+
+        return ResponseEntity.ok(authService.login(request, httpRequest));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponse> refresh(
+            @Valid @RequestBody RefreshTokenRequest request
+    ) {
+
+        return ResponseEntity.ok(authService.refresh(request));
     }
 
 }

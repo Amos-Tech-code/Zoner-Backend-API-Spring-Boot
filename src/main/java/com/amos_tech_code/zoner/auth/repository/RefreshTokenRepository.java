@@ -9,14 +9,11 @@ import java.util.UUID;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID> {
 
-    List<RefreshToken> findByUserIdAndRevokedAtIsNull(UUID userId);
+    Optional<RefreshToken> findById(UUID id);
 
     Optional<RefreshToken> findByUserIdAndDeviceIdAndRevokedAtIsNull(
             UUID userId,
             String deviceId
     );
 
-    Optional<RefreshToken> findByTokenId(UUID tokenId);
-
-    Optional<RefreshToken> findByTokenHash(String tokenHash);
 }
