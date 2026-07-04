@@ -41,6 +41,7 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public String generateAccessToken(
             UUID userId,
+            UUID sessionId,
             String email,
             Map<String, Object> claims
     ) {
@@ -50,7 +51,7 @@ public class JwtServiceImpl implements JwtService {
 
         return buildToken(
                 userId,
-                null,
+                sessionId,
                 allClaims,
                 jwtProperties.getAccessTokenExpiration()
         );

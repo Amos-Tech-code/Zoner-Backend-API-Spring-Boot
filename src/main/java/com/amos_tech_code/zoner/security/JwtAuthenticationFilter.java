@@ -55,6 +55,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             UUID userId = jwtService.extractUserId(token);
+            UUID sessionId = jwtService.extractSessionId(token);
 
             User user =
                     userRepository
@@ -72,6 +73,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             AuthenticatedUser principal =
                     new AuthenticatedUser(
                             user.getId(),
+                            sessionId,
                             user.getEmail(),
                             user.getRole()
                     );

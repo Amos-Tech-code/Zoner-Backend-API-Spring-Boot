@@ -1,11 +1,11 @@
 package com.amos_tech_code.zoner.auth.service;
 
 import com.amos_tech_code.zoner.auth.dto.request.*;
-import com.amos_tech_code.zoner.auth.dto.response.CompleteProfileResponse;
-import com.amos_tech_code.zoner.auth.dto.response.LoginResponse;
-import com.amos_tech_code.zoner.auth.dto.response.RegisterResponse;
-import com.amos_tech_code.zoner.auth.dto.response.VerifyEmailResponse;
+import com.amos_tech_code.zoner.auth.dto.response.*;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.List;
+import java.util.UUID;
 
 public interface AuthService {
 
@@ -26,5 +26,19 @@ public interface AuthService {
 
     LoginResponse refresh(
             RefreshTokenRequest request
+    );
+
+    MessageResponse logout(LogoutRequest request);
+
+    MessageResponse logoutAll(UUID userId);
+
+    List<SessionResponse> getSessions(
+            UUID userId,
+            UUID currentSessionId
+    );
+
+    MessageResponse revokeSession(
+            UUID userId,
+            UUID sessionId
     );
 }

@@ -18,6 +18,8 @@ CREATE TABLE refresh_tokens
 
     expires_at      TIMESTAMPTZ NOT NULL,
 
+    created_at      TIMESTAMPTZ NOT NULL,
+
     revoked_at      TIMESTAMPTZ,
 
     last_used_at    TIMESTAMPTZ,

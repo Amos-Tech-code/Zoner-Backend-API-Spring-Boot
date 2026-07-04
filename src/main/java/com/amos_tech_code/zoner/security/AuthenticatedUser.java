@@ -8,6 +8,8 @@ public record AuthenticatedUser(
 
         UUID id,
 
+        UUID sessionId,
+
         String email,
 
         Role role

@@ -1,15 +1,13 @@
 package com.amos_tech_code.zoner.auth.service.impl;
 
+import com.amos_tech_code.zoner.auth.dto.internal.DeviceInfo;
 import com.amos_tech_code.zoner.auth.dto.internal.RefreshTokenResult;
 import com.amos_tech_code.zoner.auth.dto.request.*;
-import com.amos_tech_code.zoner.auth.dto.response.CompleteProfileResponse;
-import com.amos_tech_code.zoner.auth.dto.response.VerifyEmailResponse;
+import com.amos_tech_code.zoner.auth.dto.response.*;
 import com.amos_tech_code.zoner.auth.entity.RefreshToken;
 import com.amos_tech_code.zoner.auth.event.EmailVerifiedEvent;
 import com.amos_tech_code.zoner.auth.service.*;
 import com.amos_tech_code.zoner.common.exception.*;
-import com.amos_tech_code.zoner.auth.dto.response.LoginResponse;
-import com.amos_tech_code.zoner.auth.dto.response.RegisterResponse;
 import com.amos_tech_code.zoner.auth.entity.AuthAccount;
 import com.amos_tech_code.zoner.auth.entity.EmailVerification;
 import com.amos_tech_code.zoner.auth.mapper.AuthMapper;
@@ -32,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -336,35 +335,30 @@ public class AuthServiceImpl implements AuthService {
 
         String ipAddress = extractClientIp(httpRequest);
 
-        RefreshTokenResult refreshResult =
-                refreshTokenService.create(
-                        user,
-                        request,
+        DeviceInfo deviceInfo =
+                new DeviceInfo(
+                        request.deviceId(),
+                        request.deviceName(),
+                        request.platform(),
                         userAgent,
                         ipAddress
                 );
 
-        Map<String, Object> claims = Map.of(
-                "role", user.getRole().name(),
-                "registrationStage", user.getRegistrationStage().name()
-        );
-
-        String accessToken =
-                jwtService.generateAccessToken(
-                        user.getId(),
-                        user.getEmail(),
-                        claims
+        RefreshTokenResult refreshResult =
+                refreshTokenService.create(
+                        user,
+                        deviceInfo
                 );
 
-        log.info(
-                "User {} logged in successfully.",
-                user.getEmail()
-        );
+        String accessToken = createAccessToken(user, refreshResult.refreshToken().getId());
+
+        log.info("User {} logged in successfully.", user.getEmail());
 
         return AuthMapper.toLoginResponse(
                 accessToken,
-                jwtProperties.getAccessTokenExpiration().getSeconds(),
                 refreshResult.rawToken(),
+                jwtProperties.getAccessTokenExpiration().getSeconds(),
+                jwtProperties.getRefreshTokenExpiration().getSeconds(),
                 user
         );
     }
@@ -376,23 +370,22 @@ public class AuthServiceImpl implements AuthService {
 
         String refreshToken = request.refreshToken();
 
-        // 1. Validate JWT
         if (!jwtService.isTokenValid(refreshToken)) {
-            throw new InvalidTokenException(
-                    "Invalid refresh token."
-            );
+            throw new InvalidTokenException("Invalid refresh token.");
         }
 
-        // 2. Extract IDs from JWT
         UUID userId = jwtService.extractUserId(refreshToken);
 
         UUID sessionId = jwtService.extractSessionId(refreshToken);
 
-        // 3. Validate stored session
-        RefreshToken storedToken =
-                refreshTokenService.findActive(sessionId);
+        RefreshToken storedToken = refreshTokenService.findActive(sessionId);
 
-        // 4. Verify user
+        if (!refreshTokenService.matches(storedToken, refreshToken)) {
+
+            throw new InvalidTokenException("Invalid refresh token.");
+
+        }
+
         User user =
                 userRepository
                         .findByIdAndDeletedAtIsNull(userId)
@@ -413,29 +406,83 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
-        // 5. Update session activity
-        refreshTokenService.updateLastUsed(
-                storedToken
-        );
-
-        // 6. Create new access token
-        String accessToken =
-                jwtService.generateAccessToken(
-                        user.getId(),
-                        user.getEmail(),
-                        Map.of(
-                                "role", user.getRole().name()
-                        )
+        RefreshTokenResult rotated =
+                refreshTokenService.rotate(
+                        storedToken,
+                        user
                 );
 
-        // 7. Return same refresh token for now
+        String accessToken = createAccessToken(user, rotated.refreshToken().getId());
+
         return AuthMapper.toLoginResponse(
                 accessToken,
+                rotated.rawToken(),
                 jwtProperties.getAccessTokenExpiration().getSeconds(),
-                refreshToken,
+                jwtProperties.getRefreshTokenExpiration().getSeconds(),
                 user
         );
 
+    }
+
+    @Override
+    public MessageResponse logout(LogoutRequest request) {
+
+        UUID sessionId = jwtService.extractSessionId(request.refreshToken());
+
+        RefreshToken refreshToken = refreshTokenService.findActive(sessionId);
+
+        if (!refreshTokenService.matches(refreshToken, request.refreshToken())) {
+
+            throw new InvalidTokenException("Invalid refresh token.");
+
+        }
+
+        refreshTokenService.revoke(refreshToken);
+
+        log.info("Session {} logged out successfully.", sessionId);
+
+        return new MessageResponse(
+                "Logged out successfully."
+        );
+
+    }
+
+    @Override
+    public MessageResponse logoutAll(UUID userId) {
+
+        refreshTokenService.revokeAll(userId);
+
+        log.info("User {} logged out from all devices.", userId);
+
+        return new MessageResponse(
+                "Logged out from all devices successfully."
+        );
+
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SessionResponse> getSessions(
+            UUID userId,
+            UUID currentSessionId
+    ) {
+
+        return refreshTokenService
+                .findActiveSessions(userId)
+                .stream()
+                .map(token ->
+                        AuthMapper.toSessionResponse(
+                                token,
+                                currentSessionId
+                        )
+                )
+                .toList();
+
+    }
+
+    @Override
+    public MessageResponse revokeSession(UUID userId, UUID sessionId) {
+        return null;
     }
 
     private String extractClientIp(HttpServletRequest request) {
@@ -449,6 +496,21 @@ public class AuthServiceImpl implements AuthService {
         }
 
         return request.getRemoteAddr();
+    }
+
+    private String createAccessToken(
+            User user,
+            UUID sessionId
+    ) {
+        return jwtService.generateAccessToken(
+                user.getId(),
+                sessionId,
+                user.getEmail(),
+                Map.of(
+                        "role", user.getRole().name(),
+                        "registrationStage", user.getRegistrationStage().name()
+                )
+        );
     }
 
 }

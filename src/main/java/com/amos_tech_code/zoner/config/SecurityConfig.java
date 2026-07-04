@@ -25,11 +25,18 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
+                        // Logout endpoint requires authentication
+                        .requestMatchers(
+                                "/api/v1/auth/logout",
+                                "/api/v1/auth/logout-all"
+                        )
+                        .authenticated()
 
-                        .requestMatchers("/api/v1/auth/**")
-                        .permitAll()
-
-                        .requestMatchers("/actuator/health")
+                        // All other authentication endpoints are permitted
+                        .requestMatchers(
+                                "/api/v1/auth/**",
+                                "/actuator/health"
+                        )
                         .permitAll()
 
                         .requestMatchers(HttpMethod.OPTIONS, "/**")

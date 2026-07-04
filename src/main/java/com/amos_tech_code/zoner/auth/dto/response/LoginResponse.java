@@ -4,10 +4,13 @@ public record LoginResponse(
 
         String accessToken,
 
-        Long expiresIn,
-
         String refreshToken,
+
+        Long accessTokenExpiresIn,
+
+        Long refreshTokenExpiresIn,
 
         UserResponse user
 
-) {}
+) {
+}

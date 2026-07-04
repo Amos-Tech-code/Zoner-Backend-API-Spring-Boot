@@ -9,6 +9,7 @@ public interface JwtService {
 
     String generateAccessToken(
             UUID userId,
+            UUID sessionId,
             String email,
             Map<String, Object> claims
     );

@@ -1,5 +1,6 @@
 package com.amos_tech_code.zoner.auth.service.impl;
 
+import com.amos_tech_code.zoner.auth.dto.internal.DeviceInfo;
 import com.amos_tech_code.zoner.auth.dto.internal.RefreshTokenResult;
 import com.amos_tech_code.zoner.auth.dto.request.LoginRequest;
 import com.amos_tech_code.zoner.auth.entity.RefreshToken;
@@ -18,6 +19,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -36,9 +38,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Override
     public RefreshTokenResult create(
         User user,
-        LoginRequest request,
-        String userAgent,
-        String ipAddress
+        DeviceInfo deviceInfo
     ) {
 
         UUID tokenId = UUID.randomUUID();
@@ -57,15 +57,15 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
             .id(tokenId)
             .user(user)
             .tokenHash(hashedToken)
-            .deviceId(request.deviceId())
-            .deviceName(request.deviceName())
-            .platform(request.platform())
-            .userAgent(userAgent)
-            .ipAddress(ipAddress)
+            .deviceId(deviceInfo.deviceId())
+            .deviceName(deviceInfo.deviceName())
+            .platform(deviceInfo.platform())
+            .userAgent(deviceInfo.userAgent())
+            .ipAddress(deviceInfo.ipAddress())
             .expiresAt(
                 Instant.now(clock)
                     .plus(jwtProperties.getRefreshTokenExpiration())
-            )
+            ).createdAt(Instant.now(clock))
             .build();
 
         repository.save(refreshToken);
@@ -94,11 +94,20 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
             return;
         }
 
-        refreshToken.setRevokedAt(
-            Instant.now(clock)
-        );
+        refreshToken.setRevokedAt(Instant.now(clock));
 
         repository.save(refreshToken);
+
+        repository.flush();
+    }
+
+    @Override
+    public void revokeAll(UUID userId) {
+
+        repository.revokeAllActiveByUserId(
+                userId,
+                Instant.now(clock)
+        );
 
     }
 
@@ -136,6 +145,54 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         refreshToken.setLastUsedAt(Instant.now(clock));
 
         repository.save(refreshToken);
+
+    }
+
+    @Override
+    public boolean matches(
+            RefreshToken refreshToken,
+            String rawToken
+    ) {
+
+        return refreshToken
+                .getTokenHash()
+                .equals(hashTokenWithSHA256(rawToken));
+
+    }
+
+    @Override
+    public RefreshTokenResult rotate(
+            RefreshToken currentToken,
+            User user
+    ) {
+        currentToken.setLastUsedAt(Instant.now(clock));
+
+        revoke(currentToken);
+
+        DeviceInfo deviceInfo =
+                new DeviceInfo(
+                        currentToken.getDeviceId(),
+                        currentToken.getDeviceName(),
+                        currentToken.getPlatform(),
+                        currentToken.getUserAgent(),
+                        currentToken.getIpAddress()
+                );
+
+        return create(
+                user,
+                deviceInfo
+        );
+
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RefreshToken> findActiveSessions(UUID userId) {
+
+        return repository
+                .findAllByUserIdAndRevokedAtIsNullOrderByLastUsedAtDesc(
+                        userId
+                );
 
     }
 

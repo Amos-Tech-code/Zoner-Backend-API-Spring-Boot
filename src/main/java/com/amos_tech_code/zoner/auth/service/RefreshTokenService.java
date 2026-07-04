@@ -1,19 +1,18 @@
 package com.amos_tech_code.zoner.auth.service;
 
+import com.amos_tech_code.zoner.auth.dto.internal.DeviceInfo;
 import com.amos_tech_code.zoner.auth.dto.internal.RefreshTokenResult;
 import com.amos_tech_code.zoner.auth.entity.RefreshToken;
-import com.amos_tech_code.zoner.auth.dto.request.LoginRequest;
 import com.amos_tech_code.zoner.users.entity.User;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface RefreshTokenService {
 
     RefreshTokenResult create(
             User user,
-            LoginRequest request,
-            String userAgent,
-            String ipAddress
+            DeviceInfo deviceInfo
     );
 
     void revokeActiveSession(
@@ -23,8 +22,21 @@ public interface RefreshTokenService {
 
     void revoke(RefreshToken refreshToken);
 
+    void revokeAll(UUID userId);
+
     RefreshToken findActive(UUID sessionId);
 
     void updateLastUsed(RefreshToken refreshToken);
 
+    boolean matches(
+            RefreshToken refreshToken,
+            String rawToken
+    );
+
+    RefreshTokenResult rotate(
+            RefreshToken currentToken,
+            User user
+    );
+
+    List<RefreshToken> findActiveSessions(UUID userId);
 }

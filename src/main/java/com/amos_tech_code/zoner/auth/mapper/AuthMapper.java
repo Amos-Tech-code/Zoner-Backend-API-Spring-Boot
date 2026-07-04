@@ -1,9 +1,11 @@
 package com.amos_tech_code.zoner.auth.mapper;
 
 import com.amos_tech_code.zoner.auth.dto.response.*;
+import com.amos_tech_code.zoner.auth.entity.RefreshToken;
 import com.amos_tech_code.zoner.users.entity.User;
 
 import java.util.List;
+import java.util.UUID;
 
 public final class AuthMapper {
 
@@ -79,23 +81,53 @@ public final class AuthMapper {
                 user.getDisplayName(),
                 user.getRole(),
                 user.getRegistrationStage(),
-                user.isEmailVerified(),
-                user.getBusinessProfile() != null
+                user.isEmailVerified()
         );
     }
 
     public static LoginResponse toLoginResponse(
             String accessToken,
-            Long expiresIn,
             String refreshToken,
+            Long accessTokenExpiresIn,
+            Long refreshTokenExpiresIn,
             User user
     ) {
         return new LoginResponse(
                 accessToken,
-                expiresIn,
                 refreshToken,
+                accessTokenExpiresIn,
+                refreshTokenExpiresIn,
                 toUserResponse(user)
         );
     }
 
+    public static SessionResponse toSessionResponse(
+            RefreshToken token,
+            UUID currentSessionId
+    ) {
+
+        return new SessionResponse(
+
+                token.getId(),
+
+                token.getDeviceName(),
+
+                token.getDeviceId(),
+
+                token.getPlatform(),
+
+                token.getIpAddress(),
+
+                token.getUserAgent(),
+
+                token.getCreatedAt(),
+
+                token.getLastUsedAt(),
+
+                token.getExpiresAt(),
+
+                token.getId().equals(currentSessionId)
+        );
+
+    }
 }

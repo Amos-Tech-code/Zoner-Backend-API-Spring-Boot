@@ -19,8 +19,6 @@ public record UserResponse(
 
         RegistrationStage registrationStage,
 
-        boolean emailVerified,
-
-        boolean hasBusinessProfile
+        boolean emailVerified
 ) {
 }
