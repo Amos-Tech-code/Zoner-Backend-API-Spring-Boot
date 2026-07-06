@@ -4,8 +4,10 @@ import com.amos_tech_code.zoner.auth.dto.internal.DeviceInfo;
 import com.amos_tech_code.zoner.auth.dto.internal.RefreshTokenResult;
 import com.amos_tech_code.zoner.auth.dto.request.*;
 import com.amos_tech_code.zoner.auth.dto.response.*;
+import com.amos_tech_code.zoner.auth.entity.PasswordResetToken;
 import com.amos_tech_code.zoner.auth.entity.RefreshToken;
 import com.amos_tech_code.zoner.auth.event.EmailVerifiedEvent;
+import com.amos_tech_code.zoner.auth.event.PasswordChangedEvent;
 import com.amos_tech_code.zoner.auth.service.*;
 import com.amos_tech_code.zoner.common.exception.*;
 import com.amos_tech_code.zoner.auth.entity.AuthAccount;
@@ -13,6 +15,7 @@ import com.amos_tech_code.zoner.auth.entity.EmailVerification;
 import com.amos_tech_code.zoner.auth.mapper.AuthMapper;
 import com.amos_tech_code.zoner.auth.repository.AuthAccountRepository;
 import com.amos_tech_code.zoner.common.enums.Visibility;
+import com.amos_tech_code.zoner.config.properties.AuthProperties;
 import com.amos_tech_code.zoner.config.properties.JwtProperties;
 import com.amos_tech_code.zoner.users.entity.User;
 import com.amos_tech_code.zoner.users.enums.AccountStatus;
@@ -59,7 +62,11 @@ public class AuthServiceImpl implements AuthService {
 
     private final JwtProperties jwtProperties;
 
+    private final AuthProperties authProperties;
+
     private final RefreshTokenService refreshTokenService;
+
+    private final PasswordResetService passwordResetService;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -484,6 +491,155 @@ public class AuthServiceImpl implements AuthService {
     public MessageResponse revokeSession(UUID userId, UUID sessionId) {
         return null;
     }
+
+    @Override
+    public MessageResponse forgotPassword(
+            ForgotPasswordRequest request
+    ) {
+
+        userRepository
+                .findByEmailAndDeletedAtIsNull(request.email())
+                .ifPresent(passwordResetService::create);
+
+        return new MessageResponse(
+                "If an account exists for this email, a password reset code has been sent."
+        );
+
+    }
+
+    @Override
+    public MessageResponse resetPassword(
+            ResetPasswordRequest request
+    ) {
+
+        User user =
+                userRepository
+                        .findByEmailAndDeletedAtIsNull(request.email())
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Invalid password reset request."
+                                ));
+
+        PasswordResetToken token =
+                passwordResetService.getActive(user);
+
+        if (token.getExpiresAt().isBefore(Instant.now(clock))) {
+            throw new InvalidVerificationCodeException(
+                    "Password reset code has expired."
+            );
+        }
+
+        if (token.getAttempts() >= authProperties.getMaxVerificationAttempts()) {
+            throw new InvalidVerificationCodeException(
+                    "Maximum verification attempts exceeded."
+            );
+        }
+
+        boolean matches =
+                passwordService.matches(
+                        request.code(),
+                        token.getVerificationCodeHash()
+                );
+
+        if (!matches) {
+
+            passwordResetService.incrementAttempts(token);
+
+            throw new InvalidVerificationCodeException(
+                    "Invalid password reset code."
+            );
+
+        }
+
+        passwordResetService.markVerified(token);
+
+        user.setPasswordHash(
+                passwordService.hash(request.newPassword())
+        );
+
+        userRepository.save(user);
+
+        refreshTokenService.revokeAll(user.getId());
+
+        eventPublisher.publishEvent(
+                new PasswordChangedEvent(
+                        user.getId(),
+                        user.getEmail()
+                )
+        );
+
+        return new MessageResponse(
+                "Password reset successfully."
+        );
+
+    }
+
+    @Override
+    public MessageResponse resendPasswordResetOtp(
+            ForgotPasswordRequest request
+    ) {
+
+        userRepository
+                .findByEmailAndDeletedAtIsNull(request.email())
+                .ifPresent(passwordResetService::resend);
+
+        return new MessageResponse(
+                "If an account exists for this email, a new password reset code has been sent."
+        );
+
+    }
+
+    @Override
+    @Transactional
+    public MessageResponse changePassword(
+            UUID userId,
+            ChangePasswordRequest request
+    ) {
+
+        User user = userRepository
+                .findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found.")
+
+                );
+
+        // Verify current password
+        if (!passwordService.matches(
+                request.currentPassword(),
+                user.getPasswordHash()
+        )) {
+            throw new UnauthorizedException("Current password is incorrect.");
+        }
+
+        // Prevent using the same password
+        if (passwordService.matches(
+                request.newPassword(),
+                user.getPasswordHash()
+        )) {
+            throw new DuplicateResourceException(
+                    "New password must be different from the current password."
+            );
+        }
+        // Update password
+        user.setPasswordHash(passwordService.hash(request.newPassword()));
+
+        userRepository.save(user);
+        // Revoke every session
+        refreshTokenService.revokeAll(user.getId());
+        // Audit / notification event
+        eventPublisher.publishEvent(
+                new PasswordChangedEvent(
+                        user.getId(),
+                        user.getEmail()
+                )
+        );
+
+        return new MessageResponse(
+                "Password changed successfully."
+        );
+
+    }
+
 
     private String extractClientIp(HttpServletRequest request) {
 

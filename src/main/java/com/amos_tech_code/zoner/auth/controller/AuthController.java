@@ -76,7 +76,6 @@ public class AuthController {
 
     @GetMapping("/sessions")
     public List<SessionResponse> sessions(
-
             @AuthenticationPrincipal
             AuthenticatedUser principal
 
@@ -105,7 +104,6 @@ public class AuthController {
 
     @PostMapping("/logout-all")
     public ResponseEntity<MessageResponse> logoutAll(
-
             @AuthenticationPrincipal
             AuthenticatedUser user
 
@@ -113,6 +111,48 @@ public class AuthController {
 
         return ResponseEntity.ok(
                 authService.logoutAll(user.id())
+        );
+
+    }
+
+    @PostMapping("/forgot-password")
+    @ResponseStatus(HttpStatus.OK)
+    public MessageResponse forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request
+    ) {
+
+        return authService.forgotPassword(request);
+
+    }
+
+    @PostMapping("/resend-password-reset")
+    @ResponseStatus(HttpStatus.OK)
+        public MessageResponse resendPasswordReset(
+            @Valid @RequestBody ForgotPasswordRequest request
+    ) {
+
+        return authService.resendPasswordResetOtp(request);
+
+    }
+
+    @PostMapping("/reset-password")
+    @ResponseStatus(HttpStatus.OK)
+    public MessageResponse resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request
+    ) {
+
+        return authService.resetPassword(request);
+
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<MessageResponse> changePassword(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
+
+        return ResponseEntity.ok(
+                authService.changePassword(user.id(), request)
         );
 
     }

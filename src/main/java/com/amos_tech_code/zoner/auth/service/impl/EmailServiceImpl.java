@@ -104,4 +104,36 @@ public class EmailServiceImpl implements EmailService {
 
     }
 
+    @Override
+    public void sendPasswordChangedNotification(String email) {
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setFrom(mailProperties.getFrom());
+        message.setSubject("Your Zoner password has been changed");
+        message.setText("""
+                Hello,
+    
+                Your password has been changed successfully.
+    
+                If you made this change, no further action is required.
+    
+                If you did NOT change your password, please contact support immediately.
+    
+                Regards,
+                Zoner Team
+                """);
+        try {
+            mailSender.send(message);
+        } catch (MailException ex) {
+            log.error(
+                    "Failed to send verification email to {}",
+                    email,
+                    ex
+            );
+            throw ex;
+        }
+
+    }
+
 }

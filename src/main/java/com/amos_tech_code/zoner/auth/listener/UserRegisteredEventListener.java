@@ -4,6 +4,7 @@ import com.amos_tech_code.zoner.auth.event.UserRegisteredEvent;
 import com.amos_tech_code.zoner.auth.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -15,6 +16,7 @@ public class UserRegisteredEventListener {
 
     private final EmailService emailService;
 
+    @Async
     @TransactionalEventListener(
             phase = TransactionPhase.AFTER_COMMIT
     )

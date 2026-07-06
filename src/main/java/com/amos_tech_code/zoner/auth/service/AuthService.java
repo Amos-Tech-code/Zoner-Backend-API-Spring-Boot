@@ -41,4 +41,22 @@ public interface AuthService {
             UUID userId,
             UUID sessionId
     );
+
+    MessageResponse forgotPassword(
+            ForgotPasswordRequest request
+    );
+
+    MessageResponse resetPassword(
+            ResetPasswordRequest request
+    );
+
+    MessageResponse resendPasswordResetOtp(
+            ForgotPasswordRequest request
+    );
+
+    MessageResponse changePassword(
+            UUID userId,
+            ChangePasswordRequest request
+    );
+
 }

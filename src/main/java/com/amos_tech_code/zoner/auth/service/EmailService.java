@@ -12,5 +12,9 @@ public interface EmailService {
             String code
     );
 
+    void sendPasswordChangedNotification(
+            String email
+    );
+
 
 }
