@@ -49,6 +49,9 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-cache")
 
+    // Firebase SDK
+    implementation("com.google.firebase:firebase-admin:9.3.0")
+
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
     testImplementation("org.springframework.boot:spring-boot-starter-flyway-test")

@@ -42,3 +42,6 @@ out/
 ### Env ###
 .env
 *.env
+
+## Firebase
+src/main/resources/firebase/*.json
