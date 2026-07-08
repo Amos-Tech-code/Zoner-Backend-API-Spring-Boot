@@ -1,5 +1,6 @@
 package com.amos_tech_code.zoner.auth.listener;
 
+import com.amos_tech_code.zoner.auth.event.EmailVerifiedEvent;
 import com.amos_tech_code.zoner.auth.event.UserRegisteredEvent;
 import com.amos_tech_code.zoner.auth.service.EmailService;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,20 @@ public class UserRegisteredEventListener {
         emailService.sendVerificationCode(
                 event.email(),
                 event.otp()
+        );
+    }
+
+    @Async
+    @TransactionalEventListener(
+            phase = TransactionPhase.AFTER_COMMIT
+    )
+    public void handleEmailVerifiedEvent(EmailVerifiedEvent event) {
+        log.info(
+                "Sending email verified notification to {}",
+                event.email()
+        );
+        emailService.sendEmailVerifiedNotification(
+                event.email()
         );
     }
 

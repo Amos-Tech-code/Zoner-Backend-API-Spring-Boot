@@ -10,6 +10,8 @@ public enum AccountStatus {
 
     DEACTIVATED, // User choose to deactivate
 
-    BANNED // Permanent admin action
+    BANNED, // Permanent admin action
+
+    DELETED // User choose to delete
 
 }

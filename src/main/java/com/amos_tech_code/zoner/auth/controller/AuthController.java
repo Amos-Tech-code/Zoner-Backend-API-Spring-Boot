@@ -157,4 +157,34 @@ public class AuthController {
 
     }
 
+    @PatchMapping("/me/deactivate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deactivateAccount(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @Valid @RequestBody ConfirmPasswordRequest request
+    ) {
+
+        authService.deactivateAccount(
+                user.id(),
+                request
+        );
+
+    }
+
+    @DeleteMapping("/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAccount(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @Valid @RequestBody ConfirmPasswordRequest request
+    ) {
+
+        authService.deleteAccount(
+                user.id(),
+                request
+        );
+
+    }
+
+
+
 }

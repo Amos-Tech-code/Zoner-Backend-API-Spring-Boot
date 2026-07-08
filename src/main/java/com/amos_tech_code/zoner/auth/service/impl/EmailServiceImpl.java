@@ -2,6 +2,7 @@ package com.amos_tech_code.zoner.auth.service.impl;
 
 import com.amos_tech_code.zoner.config.properties.MailProperties;
 import com.amos_tech_code.zoner.auth.service.EmailService;
+import com.amos_tech_code.zoner.users.enums.AccountStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.MailException;
@@ -59,6 +60,29 @@ public class EmailServiceImpl implements EmailService {
 
         }
 
+    }
+
+    @Override
+    public void sendEmailVerifiedNotification(String email) {
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setFrom(mailProperties.getFrom());
+        message.setSubject("Your Zoner account has been verified");
+        message.setText(
+                """
+                Hello,
+    
+                Your account has been verified successfully.
+                
+                If you made this change, no further action is required.
+    
+                If you did NOT verify your account, please contact support immediately.
+    
+                Regards,
+                Zoner Team
+                """
+        );
     }
 
     @Override
@@ -135,5 +159,41 @@ public class EmailServiceImpl implements EmailService {
         }
 
     }
+
+    @Override
+    public void sendAccountStatusChangedNotification(
+            String email,
+            AccountStatus status
+    ) {
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setFrom(mailProperties.getFrom());
+        message.setSubject("Your Zoner account status has been changed");
+        message.setText("""
+                Hello,
+    
+                Your account status has been changed to %s.
+                
+                If you made this change, no further action is required.
+                
+                If you did NOT change your account status, please contact support immediately.
+    
+                Regards,
+                Zoner Team
+                )""".formatted(status.name()));
+        try {
+            mailSender.send(message);
+
+        } catch (MailException ex) {
+            log.error(
+                    "Failed to send verification email to {}",
+                    email,
+                    ex
+            );
+            throw ex;
+        }
+    }
+
 
 }

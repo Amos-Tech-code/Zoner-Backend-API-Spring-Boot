@@ -59,4 +59,14 @@ public interface AuthService {
             ChangePasswordRequest request
     );
 
+    void deactivateAccount(
+            UUID userId,
+            ConfirmPasswordRequest request
+    );
+
+    void deleteAccount(
+            UUID userId,
+            ConfirmPasswordRequest request
+    );
+
 }

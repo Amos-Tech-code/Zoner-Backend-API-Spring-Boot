@@ -6,9 +6,11 @@ import com.amos_tech_code.zoner.auth.dto.request.*;
 import com.amos_tech_code.zoner.auth.dto.response.*;
 import com.amos_tech_code.zoner.auth.entity.PasswordResetToken;
 import com.amos_tech_code.zoner.auth.entity.RefreshToken;
+import com.amos_tech_code.zoner.auth.event.AccountStatusChangedEvent;
 import com.amos_tech_code.zoner.auth.event.EmailVerifiedEvent;
 import com.amos_tech_code.zoner.auth.event.PasswordChangedEvent;
 import com.amos_tech_code.zoner.auth.service.*;
+import com.amos_tech_code.zoner.business.service.BusinessService;
 import com.amos_tech_code.zoner.common.exception.*;
 import com.amos_tech_code.zoner.auth.entity.AuthAccount;
 import com.amos_tech_code.zoner.auth.entity.EmailVerification;
@@ -67,6 +69,8 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenService refreshTokenService;
 
     private final PasswordResetService passwordResetService;
+
+    private final BusinessService businessService;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -640,6 +644,115 @@ public class AuthServiceImpl implements AuthService {
 
     }
 
+    @Override
+    public void deactivateAccount(
+            UUID userId,
+            ConfirmPasswordRequest request
+    ) {
+
+        User user =
+                userRepository
+                        .findByIdAndDeletedAtIsNull(userId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "User not found."
+                                ));
+
+        AuthAccount account =
+                authAccountRepository
+                        .findByUserIdAndProvider(
+                                userId,
+                                AuthProvider.EMAIL
+                        )
+                        .orElse(null);
+
+        if (account != null &&
+                !passwordService.matches(
+                        request.password(),
+                        user.getPasswordHash()
+                )) {
+
+            throw new InvalidCredentialsException(
+                    "Incorrect password."
+            );
+
+        }
+
+        refreshTokenService.revokeAll(userId);
+
+        user.setAccountStatus(AccountStatus.DEACTIVATED);
+
+        userRepository.save(user);
+
+        eventPublisher.publishEvent(
+                new AccountStatusChangedEvent(
+                        user.getId(),
+                        user.getEmail(),
+                        AccountStatus.DEACTIVATED
+                )
+        );
+
+        log.info("User {} deactivated account.", user.getEmail());
+
+    }
+
+    @Override
+    public void deleteAccount(
+            UUID userId,
+            ConfirmPasswordRequest request
+    ) {
+
+        User user =
+                userRepository
+                        .findByIdAndDeletedAtIsNull(userId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "User not found."
+                                ));
+
+        AuthAccount account =
+                authAccountRepository
+                        .findByUserIdAndProvider(
+                                userId,
+                                AuthProvider.EMAIL
+                        )
+                        .orElse(null);
+
+        if (account != null &&
+                !passwordService.matches(
+                        request.password(),
+                        user.getPasswordHash()
+                )) {
+
+            throw new InvalidCredentialsException(
+                    "Incorrect password."
+            );
+
+        }
+
+        refreshTokenService.revokeAll(userId);
+
+        businessService.deleteBusiness(userId);
+
+        Instant now = Instant.now(clock);
+
+        user.setDeletedAt(now);
+
+        user.setAccountStatus(AccountStatus.DELETED);
+
+        userRepository.save(user);
+
+        eventPublisher.publishEvent(
+                new AccountStatusChangedEvent(
+                        user.getId(),
+                        user.getEmail(),
+                        AccountStatus.DELETED
+                )
+        );
+
+        log.info("User {} deleted account.", user.getEmail());
+
+    }
 
     private String extractClientIp(HttpServletRequest request) {
 

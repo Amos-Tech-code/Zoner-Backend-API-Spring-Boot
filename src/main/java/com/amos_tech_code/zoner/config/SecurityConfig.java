@@ -40,6 +40,14 @@ public class SecurityConfig {
                         )
                         .permitAll()
 
+                        // Public Business Endpoints
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/business/categories",
+                                "/api/v1/business/*"
+                        )
+                        .permitAll()
+
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
 

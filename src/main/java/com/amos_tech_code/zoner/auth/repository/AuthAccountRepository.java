@@ -18,8 +18,8 @@ public interface AuthAccountRepository extends JpaRepository<AuthAccount, UUID> 
             String providerUserId
     );
 
-    Optional<AuthAccount> findByUserAndProvider(
-            User user,
+    Optional<AuthAccount> findByUserIdAndProvider(
+            UUID userId,
             AuthProvider provider
     );
 
