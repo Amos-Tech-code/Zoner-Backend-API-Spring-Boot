@@ -1,6 +1,7 @@
 package com.amos_tech_code.zoner.auth.service.impl;
 
 import com.amos_tech_code.zoner.auth.dto.internal.DeviceInfo;
+import com.amos_tech_code.zoner.auth.dto.internal.GooglePrincipal;
 import com.amos_tech_code.zoner.auth.dto.internal.RefreshTokenResult;
 import com.amos_tech_code.zoner.auth.dto.request.*;
 import com.amos_tech_code.zoner.auth.dto.response.*;
@@ -24,6 +25,7 @@ import com.amos_tech_code.zoner.users.enums.AccountStatus;
 import com.amos_tech_code.zoner.users.enums.AuthProvider;
 import com.amos_tech_code.zoner.users.enums.RegistrationStage;
 import com.amos_tech_code.zoner.users.enums.Role;
+import com.amos_tech_code.zoner.users.mapper.UserMapper;
 import com.amos_tech_code.zoner.users.repository.UserRepository;
 import com.amos_tech_code.zoner.users.service.UsernameService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -71,6 +73,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordResetService passwordResetService;
 
     private final BusinessService businessService;
+    
+    private final GoogleService googleService;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -375,6 +379,127 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
+    public LoginResponse googleLogin(
+            GoogleLoginRequest request,
+            String userAgent,
+            String ipAddress
+    ) {
+
+        GooglePrincipal googleUser =
+                googleService.verifyIdToken(
+                        request.idToken()
+                );
+
+        User user;
+
+        Optional<AuthAccount> googleAccount =
+                authAccountRepository.findByProviderAndProviderUserId(
+                        AuthProvider.GOOGLE,
+                        googleUser.subject()
+                );
+
+        if (googleAccount.isPresent()) {
+
+            user = googleAccount.get().getUser();
+
+        } else {
+
+            user = userRepository
+                    .findByEmailAndDeletedAtIsNull(
+                            googleUser.email()
+                    )
+                    .orElseGet(() -> {
+
+                        User newUser =
+                                User.builder()
+                                        .email(googleUser.email())
+                                        .displayName(googleUser.name())
+                                        .profilePictureUrl(googleUser.picture())
+                                        .emailVerified(true)
+                                        .registrationStage(
+                                                RegistrationStage.EMAIL_VERIFIED
+                                        )
+                                        .accountStatus(
+                                                AccountStatus.ACTIVE
+                                        )
+                                        .role(Role.USER)
+                                        .visibility(Visibility.PUBLIC)
+                                        .notificationsEnabled(true)
+                                        .twoFactorEnabled(false)
+                                        .build();
+
+                        return userRepository.save(newUser);
+
+                    });
+
+            AuthAccount account =
+                    AuthAccount.builder()
+                            .user(user)
+                            .provider(AuthProvider.GOOGLE)
+                            .providerUserId(
+                                    googleUser.subject()
+                            )
+                            .email(
+                                    googleUser.email()
+                            )
+                            .build();
+
+            authAccountRepository.save(account);
+        }
+
+        if (user.getDeletedAt() != null) {
+            throw new InvalidCredentialsException(
+                    "Account has been deleted."
+            );
+        }
+
+        if (user.getAccountStatus() == AccountStatus.DEACTIVATED) {
+            throw new InvalidCredentialsException(
+                    "Your account is inactive."
+            );
+        }
+
+        if (user.getAccountStatus() == AccountStatus.SUSPENDED) {
+            throw new InvalidCredentialsException(
+                    "Your account has been suspended."
+            );
+        }
+
+        refreshTokenService.revokeActiveSession(
+                user.getId(),
+                request.deviceId()
+        );
+
+        DeviceInfo deviceInfo =
+                new DeviceInfo(
+                        request.deviceId(),
+                        request.deviceName(),
+                        request.platform(),
+                        userAgent,
+                        ipAddress
+                );
+
+        RefreshTokenResult refreshToken = refreshTokenService.create(user, deviceInfo);
+
+        String accessToken = createAccessToken(user, refreshToken.refreshToken().getId());
+
+        log.info(
+                "User {} logged in using Google.",
+                user.getEmail()
+        );
+
+        return new LoginResponse(
+                accessToken,
+                refreshToken.rawToken(),
+                jwtProperties.getAccessTokenExpiration().getSeconds(),
+                jwtProperties.getRefreshTokenExpiration().getSeconds(),
+                AuthMapper.toUserResponse(user)
+        );
+
+    }
+    
+    @Override
     public LoginResponse refresh(
             RefreshTokenRequest request
     ) {
@@ -493,7 +618,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public MessageResponse revokeSession(UUID userId, UUID sessionId) {
-        return null;
+        refreshTokenService.revokeById(sessionId);
+        log.info("Session {} revoked successfully for user {}.", sessionId, userId);
+        return new MessageResponse("Session revoked successfully.");
     }
 
     @Override

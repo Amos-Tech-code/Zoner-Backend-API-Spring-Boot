@@ -19,6 +19,12 @@ public interface AuthService {
 
     CompleteProfileResponse completeProfile(CompleteProfileRequest request);
 
+    LoginResponse googleLogin(
+            GoogleLoginRequest request,
+            String userAgent,
+            String ipAddress
+    );
+    
     LoginResponse login(
             LoginRequest request,
             HttpServletRequest httpRequest

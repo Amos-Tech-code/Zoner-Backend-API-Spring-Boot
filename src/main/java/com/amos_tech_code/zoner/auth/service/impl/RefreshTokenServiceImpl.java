@@ -112,6 +112,13 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
+    public void revokeById(UUID sessionId) {
+        RefreshToken token = repository.findById(sessionId)
+                .orElseThrow(() -> new InvalidTokenException("Session not found."));
+        revoke(token);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public RefreshToken findActive(UUID sessionId) {
 

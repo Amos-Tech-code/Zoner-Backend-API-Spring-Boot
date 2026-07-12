@@ -13,6 +13,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -57,6 +58,20 @@ public class AuthController {
 
     }
 
+    @PostMapping("/google")
+    public LoginResponse googleLogin(
+            @Valid @RequestBody GoogleLoginRequest request,
+            HttpServletRequest servletRequest
+    ) {
+
+        return authService.googleLogin(
+                request,
+                servletRequest.getHeader("User-Agent"),
+                servletRequest.getRemoteAddr()
+        );
+
+    }
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest request,
@@ -82,13 +97,19 @@ public class AuthController {
     ) {
 
         return authService.getSessions(
-
                 principal.id(),
-
                 principal.sessionId()
-
         );
 
+    }
+
+    @DeleteMapping("/sessions/{sessionId}")
+    @ResponseStatus(HttpStatus.OK)
+    public MessageResponse revokeSession(
+            @AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable UUID sessionId
+    ) {
+        return authService.revokeSession(principal.id(), sessionId);
     }
 
     @PostMapping("/logout")

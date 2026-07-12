@@ -57,6 +57,9 @@ dependencies {
     // Firebase SDK
     implementation("com.google.firebase:firebase-admin:9.3.0")
 
+    // Jackson module for Java 8 Date and Time API
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
     testImplementation("org.springframework.boot:spring-boot-starter-flyway-test")
