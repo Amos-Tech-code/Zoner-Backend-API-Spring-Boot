@@ -34,29 +34,27 @@ dependencies {
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("org.postgresql:postgresql")
     annotationProcessor("org.projectlombok:lombok")
-
+    // JWT
     implementation("io.jsonwebtoken:jjwt-api:0.12.7")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.7")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.7")
-
+    // Spring Security - OAuth2
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
-
-    implementation("io.github.cdimascio:dotenv-java:3.0.0") // Dotenv-java dependency
-
+    // Dotenv-java dependency
+    implementation("io.github.cdimascio:dotenv-java:3.0.0")
+    // Mailer dependency
     implementation("org.springframework.boot:spring-boot-starter-mail")
-
+    // Websocket dependency
     implementation("org.springframework.boot:spring-boot-starter-websocket")
-
     implementation("org.springframework.boot:spring-boot-starter-cache")
-
     // Google's authentication library.
     implementation("com.google.api-client:google-api-client:2.7.2")
     implementation("com.google.oauth-client:google-oauth-client:1.37.0")
     implementation("com.google.http-client:google-http-client-gson:1.46.3")
-
     // Firebase SDK
     implementation("com.google.firebase:firebase-admin:9.3.0")
-
+    // Cloudinary dependency
+    implementation("com.cloudinary:cloudinary-http44:1.39.0")
     // Jackson module for Java 8 Date and Time API
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 

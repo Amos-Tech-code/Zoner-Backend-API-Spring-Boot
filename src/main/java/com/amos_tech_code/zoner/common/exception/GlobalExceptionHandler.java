@@ -16,12 +16,17 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler
-    public ResponseEntity<ApiError> handleUnauthorized(
-            UnauthorizedException ex,
+    // Handler for UNAUTHORIZED exceptions
+    @ExceptionHandler({
+            UnauthorizedException.class,
+            InvalidCredentialsException.class,
+            EmailNotVerifiedException.class,
+            InvalidTokenException.class
+    })
+    public ResponseEntity<ApiError> handleUnauthorizedExceptions(
+            RuntimeException ex,
             HttpServletRequest request
     ) {
-
         ApiError error = new ApiError(
                 Instant.now(),
                 HttpStatus.UNAUTHORIZED.value(),
@@ -32,12 +37,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
-    @ExceptionHandler
-    public ResponseEntity<ApiError> handleForbidden(
-            ForbiddenException ex,
+    // Handler for FORBIDDEN exceptions
+    @ExceptionHandler({
+            ForbiddenException.class,
+            InvalidAccountStateException.class
+    })
+    public ResponseEntity<ApiError> handleForbiddenExceptions(
+            RuntimeException ex,
             HttpServletRequest request
     ) {
-
         ApiError error = new ApiError(
                 Instant.now(),
                 HttpStatus.FORBIDDEN.value(),
@@ -48,12 +56,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
-    @ExceptionHandler
-    public ResponseEntity<ApiError> handleBadRequest(
-            BadRequestException ex,
+    // Handler for BAD_REQUEST exceptions (simple message)
+    @ExceptionHandler({
+            BadRequestException.class,
+            InvalidVerificationCodeException.class,
+            InvalidMediaException.class
+    })
+    public ResponseEntity<ApiError> handleBadRequestExceptions(
+            RuntimeException ex,
             HttpServletRequest request
     ) {
-
         ApiError error = new ApiError(
                 Instant.now(),
                 HttpStatus.BAD_REQUEST.value(),
@@ -61,16 +73,15 @@ public class GlobalExceptionHandler {
                 ex.getMessage(),
                 request.getRequestURI()
         );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        return ResponseEntity.badRequest().body(error);
     }
 
-
+    // Handler for NOT_FOUND exceptions
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(
             ResourceNotFoundException ex,
             HttpServletRequest request
     ) {
-
         ApiError error = new ApiError(
                 Instant.now(),
                 HttpStatus.NOT_FOUND.value(),
@@ -78,16 +89,15 @@ public class GlobalExceptionHandler {
                 ex.getMessage(),
                 request.getRequestURI()
         );
-
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
+    // Handler for CONFLICT exceptions
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ApiError> handleDuplicate(
             DuplicateResourceException ex,
             HttpServletRequest request
     ) {
-
         ApiError error = new ApiError(
                 Instant.now(),
                 HttpStatus.CONFLICT.value(),
@@ -95,84 +105,15 @@ public class GlobalExceptionHandler {
                 ex.getMessage(),
                 request.getRequestURI()
         );
-
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
-    @ExceptionHandler(InvalidVerificationCodeException.class)
-    public ResponseEntity<ApiError> handleInvalidCode(
-            InvalidVerificationCodeException ex,
-            HttpServletRequest request
-    ) {
-
-        ApiError error = new ApiError(
-                Instant.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.badRequest().body(error);
-    }
-
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ApiError> handleInvalidCredentials(
-            InvalidCredentialsException ex,
-            HttpServletRequest request
-    ) {
-
-        ApiError error = new ApiError(
-                Instant.now(),
-                HttpStatus.UNAUTHORIZED.value(),
-                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-    }
-
-    @ExceptionHandler(EmailNotVerifiedException.class)
-    public ResponseEntity<ApiError> handleEmailNotVerified(
-            EmailNotVerifiedException ex,
-            HttpServletRequest request
-    ) {
-
-        ApiError error = new ApiError(
-                Instant.now(),
-                HttpStatus.UNAUTHORIZED.value(),
-                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-    }
-
-    @ExceptionHandler(InvalidAccountStateException.class)
-    public ResponseEntity<ApiError> handleInvalidAccountState(
-            InvalidAccountStateException ex,
-            HttpServletRequest request
-    ) {
-
-        ApiError error = new ApiError(
-                Instant.now(),
-                HttpStatus.FORBIDDEN.value(),
-                HttpStatus.FORBIDDEN.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
-    }
-
+    // Handler for MethodArgumentNotValidException (custom message extraction)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(
             MethodArgumentNotValidException ex,
             HttpServletRequest request
     ) {
-
         String message = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -186,16 +127,15 @@ public class GlobalExceptionHandler {
                 message,
                 request.getRequestURI()
         );
-
         return ResponseEntity.badRequest().body(error);
     }
 
+    // Handler for ConstraintViolationException (custom message extraction)
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiError> handleConstraintViolation(
             ConstraintViolationException ex,
             HttpServletRequest request
     ) {
-
         ApiError error = new ApiError(
                 Instant.now(),
                 HttpStatus.BAD_REQUEST.value(),
@@ -203,41 +143,31 @@ public class GlobalExceptionHandler {
                 ex.getMessage(),
                 request.getRequestURI()
         );
-
         return ResponseEntity.badRequest().body(error);
     }
 
-    @ExceptionHandler(InvalidTokenException.class)
-    public ResponseEntity<ApiError> handleInvalidToken(
-            InvalidTokenException ex,
-            HttpServletRequest request
-    ) {
-
-        ApiError error = new ApiError(
-                Instant.now(),
-                HttpStatus.UNAUTHORIZED.value(),
-                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleGeneral(
+    // Handler for INTERNAL_SERVER_ERROR exceptions (including general Exception)
+    @ExceptionHandler({
+            MediaUploadException.class,
+            MediaDeleteException.class,
+            Exception.class // Catch-all for any other unhandled exceptions
+    })
+    public ResponseEntity<ApiError> handleInternalServerErrors(
             Exception ex,
             HttpServletRequest request
     ) {
+        // For general Exception, provide a generic message unless a specific message is available
+        String message = (ex instanceof MediaUploadException || ex instanceof MediaDeleteException)
+                ? ex.getMessage()
+                : "An unexpected error occurred.";
 
         ApiError error = new ApiError(
                 Instant.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
-                "An unexpected error occurred.",
+                message,
                 request.getRequestURI()
         );
-
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }
