@@ -18,7 +18,7 @@ public final class BusinessMapper {
                 category.getId(),
                 category.getName(),
                 category.getDescription(),
-                category.getIconUrl()
+                category.getIcon().getUrl()
         );
 
     }
@@ -34,8 +34,8 @@ public final class BusinessMapper {
                 business.getCategory().getName(),
                 business.getBusinessName(),
                 business.getDescription(),
-                business.getLogoUrl(),
-                business.getCoverPhotoUrl(),
+                business.getLogo().getUrl(),
+                business.getCover().getUrl(),
                 business.getPhone(),
                 business.getEmail(),
                 business.getWebsite(),

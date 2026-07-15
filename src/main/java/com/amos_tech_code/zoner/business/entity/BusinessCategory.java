@@ -1,9 +1,8 @@
 package com.amos_tech_code.zoner.business.entity;
 
 import com.amos_tech_code.zoner.common.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.amos_tech_code.zoner.media.entity.Media;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,8 +22,9 @@ public class BusinessCategory extends BaseEntity {
     @Column(length = 300)
     private String description;
 
-    @Column(length = 500)
-    private String iconUrl;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "icon_media_id")
+    private Media icon;
 
     @Column(nullable = false)
     private boolean active = true;

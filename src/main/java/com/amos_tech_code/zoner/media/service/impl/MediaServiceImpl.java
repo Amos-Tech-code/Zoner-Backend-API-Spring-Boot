@@ -60,7 +60,7 @@ public class MediaServiceImpl implements MediaService {
                         .width(stored.width())
                         .height(stored.height())
                         .duration(stored.duration())
-                        .folder(options.folder().getFolder())
+                        .folder(options.folder())
                         .ownerType(options.ownerType())
                         .ownerId(options.ownerId())
                         .displayOrder(options.displayOrder())

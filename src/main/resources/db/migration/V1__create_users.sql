@@ -12,9 +12,7 @@ CREATE TABLE users
 
     bio                   TEXT,
 
-    profile_picture_url   VARCHAR(500),
-
-    website               VARCHAR(500),
+    profile_picture_media_id UUID,
 
     phone                 VARCHAR(30),
 
@@ -38,7 +36,12 @@ CREATE TABLE users
 
     deleted_at            TIMESTAMPTZ,
 
-    version               BIGINT NOT NULL
+    version               BIGINT NOT NULL,
+
+    CONSTRAINT fk_users_profile_picture
+        FOREIGN KEY (profile_picture_media_id)
+            REFERENCES media(id)
+
 );
 
 ALTER TABLE users

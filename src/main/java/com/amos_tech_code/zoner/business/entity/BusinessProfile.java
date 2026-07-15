@@ -1,6 +1,7 @@
 package com.amos_tech_code.zoner.business.entity;
 
 import com.amos_tech_code.zoner.common.entity.BaseEntity;
+import com.amos_tech_code.zoner.media.entity.Media;
 import com.amos_tech_code.zoner.users.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -37,11 +38,13 @@ public class BusinessProfile extends BaseEntity {
     @Column(length = 1000)
     private String description;
 
-    @Column(length = 500)
-    private String logoUrl;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "logo_media_id")
+    private Media logo;
 
-    @Column(length = 500)
-    private String coverPhotoUrl;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cover_media_id")
+    private Media cover;
 
     @Column
     private String email;

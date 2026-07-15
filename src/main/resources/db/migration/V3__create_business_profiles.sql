@@ -10,9 +10,9 @@ CREATE TABLE business_profiles
 
     description           TEXT,
 
-    logo_url              VARCHAR(500),
+    logo_media_id UUID,
 
-    cover_photo_url       VARCHAR(500),
+    cover_media_id UUID,
 
     email                 VARCHAR(255),
 
@@ -51,7 +51,16 @@ CREATE TABLE business_profiles
 
     CONSTRAINT fk_business_profile_category
         FOREIGN KEY (business_category_id)
-            REFERENCES business_categories(id)
+            REFERENCES business_categories(id),
+
+    CONSTRAINT fk_business_profile_logo
+        FOREIGN KEY (logo_media_id)
+            REFERENCES media(id),
+
+    CONSTRAINT fk_business_profile_cover
+        FOREIGN KEY (cover_media_id)
+            REFERENCES media(id)
+
 );
 
 ALTER TABLE business_profiles

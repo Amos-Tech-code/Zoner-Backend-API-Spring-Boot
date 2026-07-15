@@ -2,6 +2,8 @@ package com.amos_tech_code.zoner.media.entity;
 
 import com.amos_tech_code.zoner.media.enums.MediaOwnerType;
 import com.amos_tech_code.zoner.media.enums.MediaResourceType;
+import com.amos_tech_code.zoner.media.enums.MediaStatus;
+import com.amos_tech_code.zoner.media.enums.UploadFolder;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
@@ -58,18 +60,23 @@ public class Media {
 
     private Double duration;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String folder;
+    private UploadFolder folder;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MediaOwnerType ownerType;
 
-    @Column(nullable = false)
+    @Column
     private UUID ownerId;
 
     @Column(nullable = false)
     private Integer displayOrder;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MediaStatus status;
 
     @Column(nullable = false)
     private Instant createdAt;

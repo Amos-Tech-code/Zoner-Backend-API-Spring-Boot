@@ -20,6 +20,7 @@ import com.amos_tech_code.zoner.auth.repository.AuthAccountRepository;
 import com.amos_tech_code.zoner.common.enums.Visibility;
 import com.amos_tech_code.zoner.config.properties.AuthProperties;
 import com.amos_tech_code.zoner.config.properties.JwtProperties;
+import com.amos_tech_code.zoner.media.service.MediaService; // Import MediaService
 import com.amos_tech_code.zoner.users.entity.User;
 import com.amos_tech_code.zoner.users.enums.AccountStatus;
 import com.amos_tech_code.zoner.users.enums.AuthProvider;
@@ -75,6 +76,8 @@ public class AuthServiceImpl implements AuthService {
     private final BusinessService businessService;
     
     private final GoogleService googleService;
+
+    private final MediaService mediaService; // Inject MediaService
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -415,7 +418,7 @@ public class AuthServiceImpl implements AuthService {
                                 User.builder()
                                         .email(googleUser.email())
                                         .displayName(googleUser.name())
-                                        .profilePictureUrl(googleUser.picture())
+                                        // .profilePictureUrl(googleUser.picture()) // Removed this line
                                         .emailVerified(true)
                                         .registrationStage(
                                                 RegistrationStage.EMAIL_VERIFIED
@@ -428,6 +431,9 @@ public class AuthServiceImpl implements AuthService {
                                         .notificationsEnabled(true)
                                         .twoFactorEnabled(false)
                                         .build();
+
+                        // TODO: Implement logic to download googleUser.picture() and upload it via mediaService
+                        // Then set newUser.setProfilePicture(uploadedMedia);
 
                         return userRepository.save(newUser);
 

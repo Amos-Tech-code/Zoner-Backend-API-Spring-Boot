@@ -26,9 +26,11 @@ CREATE TABLE media
 
     owner_type VARCHAR(30) NOT NULL,
 
-    owner_id UUID NOT NULL,
+    owner_id UUID,
 
     display_order INTEGER NOT NULL DEFAULT 0,
+
+    status VARCHAR(20) NOT NULL,
 
     created_at TIMESTAMPTZ NOT NULL,
 

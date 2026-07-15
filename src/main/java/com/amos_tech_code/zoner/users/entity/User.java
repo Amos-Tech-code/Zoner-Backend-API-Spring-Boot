@@ -5,6 +5,7 @@ import com.amos_tech_code.zoner.auth.entity.EmailVerification;
 import com.amos_tech_code.zoner.business.entity.BusinessProfile;
 import com.amos_tech_code.zoner.common.entity.BaseEntity;
 import com.amos_tech_code.zoner.common.enums.Visibility;
+import com.amos_tech_code.zoner.media.entity.Media;
 import com.amos_tech_code.zoner.users.enums.AccountStatus;
 import com.amos_tech_code.zoner.users.enums.RegistrationStage;
 import com.amos_tech_code.zoner.users.enums.Role;
@@ -44,11 +45,9 @@ public class User extends BaseEntity {
     @Column(length = 500)
     private String bio;
 
-    @Column(length = 500)
-    private String profilePictureUrl;
-
-    @Column(length = 500)
-    private String website;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_picture_media_id")
+    private Media profilePicture;
 
     @Column(length = 30)
     private String phone;

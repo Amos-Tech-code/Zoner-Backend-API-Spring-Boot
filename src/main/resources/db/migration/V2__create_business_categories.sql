@@ -6,7 +6,7 @@ CREATE TABLE business_categories
 
     description  TEXT,
 
-    icon_url     VARCHAR(500),
+    icon_media_id UUID,
 
     active       BOOLEAN NOT NULL DEFAULT TRUE,
 
@@ -16,7 +16,11 @@ CREATE TABLE business_categories
 
     deleted_at   TIMESTAMPTZ,
 
-    version      BIGINT NOT NULL
+    version      BIGINT NOT NULL,
+
+    CONSTRAINT fk_business_category_icon
+        FOREIGN KEY (icon_media_id)
+            REFERENCES media(id)
 );
 
 ALTER TABLE business_categories

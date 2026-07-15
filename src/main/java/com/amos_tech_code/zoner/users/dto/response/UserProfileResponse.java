@@ -14,8 +14,6 @@ public record UserProfileResponse(
 
         String profilePictureUrl,
 
-        String website,
-
         String phone,
 
         boolean emailVerified
