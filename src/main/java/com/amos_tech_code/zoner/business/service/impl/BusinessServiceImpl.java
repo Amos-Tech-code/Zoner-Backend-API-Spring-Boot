@@ -14,6 +14,9 @@ import com.amos_tech_code.zoner.business.service.BusinessService;
 import com.amos_tech_code.zoner.business.specification.BusinessSpecifications;
 import com.amos_tech_code.zoner.common.exception.DuplicateResourceException;
 import com.amos_tech_code.zoner.common.exception.ResourceNotFoundException;
+import com.amos_tech_code.zoner.media.entity.Media;
+import com.amos_tech_code.zoner.media.enums.MediaOwnerType;
+import com.amos_tech_code.zoner.media.service.MediaService;
 import com.amos_tech_code.zoner.users.entity.User;
 import com.amos_tech_code.zoner.users.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +41,8 @@ public class BusinessServiceImpl implements BusinessService {
     private final BusinessCategoryRepository categoryRepository;
 
     private final UserRepository userRepository;
+
+    private final MediaService mediaService;
 
     private final Clock clock;
 
@@ -222,4 +227,67 @@ public class BusinessServiceImpl implements BusinessService {
 
     }
 
+    @Override
+    @Transactional
+    public void updateLogo(
+            UUID userId,
+            UUID mediaId
+    ) {
+
+        BusinessProfile business =
+                businessRepository.findByUserId(userId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Business profile not found."
+                                ));
+
+        Media media = mediaService.attach(
+                mediaId,
+                MediaOwnerType.BUSINESS,
+                business.getId()
+        );
+
+        Media previous = business.getLogo();
+
+        business.setLogo(media);
+
+        businessRepository.save(business);
+
+        if (previous != null) {
+            mediaService.delete(previous.getId());
+        }
+
+    }
+
+    @Override
+    @Transactional
+    public void updateCover(
+            UUID userId,
+            UUID mediaId
+    ) {
+
+        BusinessProfile business =
+                businessRepository.findByUserId(userId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Business profile not found."
+                                ));
+
+        Media media = mediaService.attach(
+                mediaId,
+                MediaOwnerType.BUSINESS,
+                business.getId()
+        );
+
+        Media previous = business.getCover();
+
+        business.setCover(media);
+
+        businessRepository.save(business);
+
+        if (previous != null) {
+            mediaService.delete(previous.getId());
+        }
+
+    }
 }

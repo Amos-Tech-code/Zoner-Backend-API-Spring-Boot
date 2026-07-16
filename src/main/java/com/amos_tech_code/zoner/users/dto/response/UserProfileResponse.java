@@ -1,5 +1,8 @@
 package com.amos_tech_code.zoner.users.dto.response;
 
+import com.amos_tech_code.zoner.users.enums.RegistrationStage;
+import com.amos_tech_code.zoner.users.enums.Role;
+
 import java.util.UUID;
 
 public record UserProfileResponse(
@@ -16,6 +19,10 @@ public record UserProfileResponse(
 
         String phone,
 
-        boolean emailVerified
+        boolean emailVerified,
+
+        Role role,
+
+        RegistrationStage registrationStage
 
 ) {}

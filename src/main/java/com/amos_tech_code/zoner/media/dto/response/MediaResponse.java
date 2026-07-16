@@ -1,4 +1,4 @@
-package com.amos_tech_code.zoner.media.dto;
+package com.amos_tech_code.zoner.media.dto.response;
 
 import com.amos_tech_code.zoner.media.enums.MediaResourceType;
 

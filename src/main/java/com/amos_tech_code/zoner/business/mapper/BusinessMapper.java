@@ -14,11 +14,15 @@ public final class BusinessMapper {
             BusinessCategory category
     ) {
 
+        String iconUrl = null;
+        if (category.getIcon() != null) {
+            iconUrl = category.getIcon().getSecureUrl();
+        }
         return new BusinessCategoryResponse(
                 category.getId(),
                 category.getName(),
                 category.getDescription(),
-                category.getIcon().getUrl()
+                iconUrl
         );
 
     }
@@ -27,6 +31,16 @@ public final class BusinessMapper {
             BusinessProfile business
     ) {
 
+        String logoUrl = null;
+        if (business.getLogo() != null) {
+            logoUrl = business.getLogo().getSecureUrl();
+        }
+
+        String coverUrl = null;
+        if (business.getCover() != null) {
+            coverUrl = business.getCover().getSecureUrl();
+        }
+
         return new BusinessProfileResponse(
                 business.getId(),
                 business.getUser().getId(),
@@ -34,8 +48,8 @@ public final class BusinessMapper {
                 business.getCategory().getName(),
                 business.getBusinessName(),
                 business.getDescription(),
-                business.getLogo().getUrl(),
-                business.getCover().getUrl(),
+                logoUrl,
+                coverUrl,
                 business.getPhone(),
                 business.getEmail(),
                 business.getWebsite(),

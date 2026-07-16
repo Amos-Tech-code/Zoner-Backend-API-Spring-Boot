@@ -8,16 +8,23 @@ public final class UserMapper {
     private UserMapper() {
     }
 
-    public static UserProfileResponse toResponse(User user) {
+    public static UserProfileResponse toUserResponse(User user) {
+
+        String profilePictureUrl = null;
+        if (user.getProfilePicture() != null) {
+            profilePictureUrl = user.getProfilePicture().getSecureUrl();
+        }
 
         return new UserProfileResponse(
                 user.getId(),
                 user.getDisplayName(),
                 user.getUsername(),
                 user.getBio(),
-                user.getProfilePicture().getUrl(),
+                profilePictureUrl,
                 user.getPhone(),
-                user.isEmailVerified()
+                user.isEmailVerified(),
+                user.getRole(),
+                user.getRegistrationStage()
         );
     }
 }

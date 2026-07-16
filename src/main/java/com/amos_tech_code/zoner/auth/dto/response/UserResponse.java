@@ -15,6 +15,8 @@ public record UserResponse(
 
         String displayName,
 
+        String profilePictureUrl,
+
         Role role,
 
         RegistrationStage registrationStage,

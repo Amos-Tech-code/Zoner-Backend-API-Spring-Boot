@@ -1,9 +1,13 @@
 package com.amos_tech_code.zoner.users.service;
 
-import com.amos_tech_code.zoner.auth.dto.response.UserResponse;
+import com.amos_tech_code.zoner.users.dto.response.UserProfileResponse;
+
+import java.util.UUID;
 
 public interface UserService {
 
-    UserResponse getCurrentUser();
+    UserProfileResponse getCurrentUser();
+
+    void updateProfilePicture(UUID userId, UUID mediaId);
 
 }

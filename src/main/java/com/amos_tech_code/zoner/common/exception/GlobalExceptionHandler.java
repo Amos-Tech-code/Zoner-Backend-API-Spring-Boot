@@ -59,6 +59,7 @@ public class GlobalExceptionHandler {
     // Handler for BAD_REQUEST exceptions (simple message)
     @ExceptionHandler({
             BadRequestException.class,
+            InvalidRequestException.class,
             InvalidVerificationCodeException.class,
             InvalidMediaException.class
     })

@@ -40,4 +40,14 @@ public interface BusinessService {
 
     void deleteBusiness(UUID userId);
 
+    void updateLogo(
+            UUID userId,
+            UUID mediaId
+    );
+
+    void updateCover(
+            UUID userId,
+            UUID mediaId
+    );
+
 }

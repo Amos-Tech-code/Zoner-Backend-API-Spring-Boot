@@ -20,13 +20,11 @@ import com.amos_tech_code.zoner.auth.repository.AuthAccountRepository;
 import com.amos_tech_code.zoner.common.enums.Visibility;
 import com.amos_tech_code.zoner.config.properties.AuthProperties;
 import com.amos_tech_code.zoner.config.properties.JwtProperties;
-import com.amos_tech_code.zoner.media.service.MediaService; // Import MediaService
 import com.amos_tech_code.zoner.users.entity.User;
 import com.amos_tech_code.zoner.users.enums.AccountStatus;
 import com.amos_tech_code.zoner.users.enums.AuthProvider;
 import com.amos_tech_code.zoner.users.enums.RegistrationStage;
 import com.amos_tech_code.zoner.users.enums.Role;
-import com.amos_tech_code.zoner.users.mapper.UserMapper;
 import com.amos_tech_code.zoner.users.repository.UserRepository;
 import com.amos_tech_code.zoner.users.service.UsernameService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -77,7 +75,7 @@ public class AuthServiceImpl implements AuthService {
     
     private final GoogleService googleService;
 
-    private final MediaService mediaService; // Inject MediaService
+    //private final MediaService mediaService; // Inject MediaService
 
     @Override
     public RegisterResponse register(RegisterRequest request) {

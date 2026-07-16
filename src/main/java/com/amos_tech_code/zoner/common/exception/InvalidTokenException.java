@@ -1,6 +1,7 @@
 package com.amos_tech_code.zoner.common.exception;
 
 public class InvalidTokenException extends RuntimeException {
+
     public InvalidTokenException(String message) {
         super(message);
     }

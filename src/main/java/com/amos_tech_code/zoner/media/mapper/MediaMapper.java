@@ -1,6 +1,6 @@
 package com.amos_tech_code.zoner.media.mapper;
 
-import com.amos_tech_code.zoner.media.dto.MediaResponse;
+import com.amos_tech_code.zoner.media.dto.response.MediaResponse;
 import com.amos_tech_code.zoner.media.entity.Media;
 
 public final class MediaMapper {

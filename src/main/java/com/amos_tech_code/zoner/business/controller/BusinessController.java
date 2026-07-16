@@ -6,6 +6,7 @@ import com.amos_tech_code.zoner.business.dto.request.UpdateBusinessProfileReques
 import com.amos_tech_code.zoner.business.dto.response.BusinessCategoryResponse;
 import com.amos_tech_code.zoner.business.dto.response.BusinessProfileResponse;
 import com.amos_tech_code.zoner.business.service.BusinessService;
+import com.amos_tech_code.zoner.media.dto.request.AttachMediaRequest;
 import com.amos_tech_code.zoner.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -88,6 +89,42 @@ public class BusinessController {
     ) {
 
         return businessService.search(request, pageable);
+
+    }
+
+    @PutMapping("/logo")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void updateLogo(
+
+            @AuthenticationPrincipal AuthenticatedUser user,
+
+            @Valid
+            @RequestBody AttachMediaRequest request
+
+    ) {
+
+        businessService.updateLogo(
+                user.id(),
+                request.mediaId()
+        );
+
+    }
+
+    @PutMapping("/cover")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void updateCover(
+
+            @AuthenticationPrincipal AuthenticatedUser user,
+
+            @Valid
+            @RequestBody AttachMediaRequest request
+
+    ) {
+
+        businessService.updateCover(
+                user.id(),
+                request.mediaId()
+        );
 
     }
 

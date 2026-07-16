@@ -74,11 +74,18 @@ public final class AuthMapper {
     }
 
     public static UserResponse toUserResponse(User user) {
+
+        String profilePictureUrl = null;
+        if (user.getProfilePicture() != null) {
+            profilePictureUrl = user.getProfilePicture().getSecureUrl();
+        }
+
         return new UserResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getUsername(),
                 user.getDisplayName(),
+                profilePictureUrl,
                 user.getRole(),
                 user.getRegistrationStage(),
                 user.isEmailVerified()
