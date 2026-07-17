@@ -1,6 +1,6 @@
-package com.amos_tech_code.zoner.follow.entity
+package com.amos_tech_code.zoner.social.follow.entity
 
-import com.amos_tech_code.zoner.follow.enums.FollowTargetType
+import com.amos_tech_code.zoner.social.follow.enums.FollowTargetType
 import com.amos_tech_code.zoner.users.entity.User
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

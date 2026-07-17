@@ -1,7 +1,9 @@
-package com.amos_tech_code.zoner.follow.repository
+package com.amos_tech_code.zoner.social.follow.repository
 
-import com.amos_tech_code.zoner.follow.entity.Follow
-import com.amos_tech_code.zoner.follow.enums.FollowTargetType
+import com.amos_tech_code.zoner.social.follow.entity.Follow
+import com.amos_tech_code.zoner.social.follow.enums.FollowTargetType
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.*
 
@@ -28,13 +30,15 @@ interface FollowRepository : JpaRepository<Follow, UUID> {
         followerId: UUID
     ): Long
 
-    fun findAllByFollowerId(
-        followerId: UUID
-    ): List<Follow>
-
-    fun findAllByTargetTypeAndTargetId(
+    fun findByTargetTypeAndTargetId(
         targetType: FollowTargetType,
-        targetId: UUID
-    ): List<Follow>
+        targetId: UUID,
+        pageable: Pageable
+    ): Page<Follow>
+
+    fun findByFollowerId(
+        followerId: UUID,
+        pageable: Pageable
+    ): Page<Follow>
 
 }
