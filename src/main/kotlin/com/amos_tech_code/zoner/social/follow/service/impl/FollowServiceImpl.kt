@@ -1,6 +1,7 @@
 package com.amos_tech_code.zoner.social.follow.service.impl
 
 import com.amos_tech_code.zoner.business.repository.BusinessProfileRepository
+import com.amos_tech_code.zoner.common.exception.InvalidRequestException
 import com.amos_tech_code.zoner.common.exception.ResourceNotFoundException
 import com.amos_tech_code.zoner.social.follow.dto.request.FollowRequest
 import com.amos_tech_code.zoner.social.follow.dto.response.FollowResponse
@@ -14,7 +15,6 @@ import com.amos_tech_code.zoner.social.follow.event.UserUnfollowedEvent
 import com.amos_tech_code.zoner.social.follow.repository.FollowRepository
 import com.amos_tech_code.zoner.social.follow.service.FollowService
 import com.amos_tech_code.zoner.users.repository.UserRepository
-import org.apache.coyote.BadRequestException
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -122,11 +122,17 @@ class FollowServiceImpl(
         )
 
         return followersPage.map { follow ->
+
+            var profilePictureUrl: String? = null
+            if (follow.follower.profilePicture?.secureUrl != null) {
+                profilePictureUrl = follow.follower.profilePicture?.secureUrl
+            }
+
             FollowUserResponse(
                 id = follow.follower.id,
                 username = follow.follower.username,
                 displayName = follow.follower.displayName,
-                profilePictureUrl = follow.follower.profilePicture.secureUrl,
+                profilePictureUrl = profilePictureUrl,
                 followedAt = follow.createdAt
             )
         }
@@ -149,22 +155,34 @@ class FollowServiceImpl(
                 FollowTargetType.USER -> {
                     val user = userRepository.findByIdAndDeletedAtIsNull(follow.targetId)
                         .orElseThrow { ResourceNotFoundException("User not found for targetId: ${follow.targetId}") }
+
+                    var profilePictureUrl: String? = null
+                    if (user.profilePicture != null) {
+                        profilePictureUrl = user.profilePicture?.secureUrl
+                    }
+
                     FollowingResponse(
                         id = user.id,
                         type = FollowTargetType.USER,
                         name = user.displayName ?: user.username ?: "Unknown User",
-                        imageUrl = user.profilePicture.secureUrl
+                        imageUrl = profilePictureUrl
                     )
                 }
 
                 FollowTargetType.BUSINESS -> {
                     val business = businessRepository.findById(follow.targetId)
                         .orElseThrow { ResourceNotFoundException("Business not found for targetId: ${follow.targetId}") }
+
+                    var businessLogoUrl: String? = null
+                    if (business.logo != null) {
+                        businessLogoUrl = business.logo?.secureUrl
+                    }
+
                     FollowingResponse(
                         id = business.id,
                         type = FollowTargetType.BUSINESS,
                         name = business.businessName,
-                        imageUrl = business.logo.secureUrl
+                        imageUrl = businessLogoUrl
                     )
                 }
             }
@@ -200,7 +218,7 @@ class FollowServiceImpl(
 
                 if (request.targetId == followerId) {
 
-                    throw BadRequestException("You cannot follow yourself.")
+                    throw InvalidRequestException("You cannot follow yourself.")
 
                 }
 
