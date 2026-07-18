@@ -180,7 +180,7 @@ public class BusinessServiceImpl implements BusinessService {
     public void deleteBusiness(UUID userId) {
 
         businessRepository
-                .findByUserId(userId)
+                .findByUserIdAndDeletedAtIsNull(userId)
                 .ifPresent(business -> {
 
                     business.setDeletedAt(
@@ -219,7 +219,7 @@ public class BusinessServiceImpl implements BusinessService {
     private BusinessProfile getBusiness(UUID userId) {
 
         return businessRepository
-                .findByUserId(userId)
+                .findByUserIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Business profile not found."
@@ -235,7 +235,7 @@ public class BusinessServiceImpl implements BusinessService {
     ) {
 
         BusinessProfile business =
-                businessRepository.findByUserId(userId)
+                businessRepository.findByUserIdAndDeletedAtIsNull(userId)
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
                                         "Business profile not found."
@@ -267,7 +267,7 @@ public class BusinessServiceImpl implements BusinessService {
     ) {
 
         BusinessProfile business =
-                businessRepository.findByUserId(userId)
+                businessRepository.findByUserIdAndDeletedAtIsNull(userId)
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
                                         "Business profile not found."

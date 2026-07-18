@@ -150,12 +150,12 @@ public class MediaServiceImpl implements MediaService {
                 repository.findById(mediaId)
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
-                                        "Media not found."
+                                        "Media not found. Please upload again."
                                 ));
 
         if (media.getDeletedAt() != null) {
             throw new ResourceNotFoundException(
-                    "Media not found."
+                    "Media not found. Please upload again."
             );
         }
 
@@ -167,7 +167,7 @@ public class MediaServiceImpl implements MediaService {
 
         if (media.getOwnerType() != ownerType) {
             throw new InvalidRequestException(
-                    "Media owner type mismatch."
+                    "Media owner type mismatch. Please upload again."
             );
         }
 
@@ -185,16 +185,18 @@ public class MediaServiceImpl implements MediaService {
             UUID ownerId
     ) {
 
-//        mediaIds.forEach(id ->
-//
-//                attach(
-//                        id,
-//                        ownerType,
-//                        ownerId
-//                )
-//
-//        );
+        mediaIds.forEach(id ->
+
+                attach(
+                        id,
+                        ownerType,
+                        ownerId
+                )
+
+        );
 
     }
+
+
 
 }

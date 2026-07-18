@@ -13,7 +13,7 @@ import java.util.UUID;
 public interface BusinessProfileRepository
         extends JpaRepository<BusinessProfile, UUID>, JpaSpecificationExecutor<BusinessProfile> {
 
-    Optional<BusinessProfile> findByUserId(UUID userId);
+    Optional<BusinessProfile> findByUserIdAndDeletedAtIsNull(UUID userId);
 
     boolean existsByUserId(UUID userId);
 
