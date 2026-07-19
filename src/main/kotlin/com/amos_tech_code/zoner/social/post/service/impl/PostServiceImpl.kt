@@ -14,8 +14,10 @@ import com.amos_tech_code.zoner.social.post.dto.request.UpdatePostRequest
 import com.amos_tech_code.zoner.social.post.dto.response.PostResponse
 import com.amos_tech_code.zoner.social.post.entity.Post
 import com.amos_tech_code.zoner.social.post.enums.PostStatus
+import com.amos_tech_code.zoner.social.post.event.PostDeletedEvent
 import com.amos_tech_code.zoner.social.post.event.PostDraftCreatedEvent
 import com.amos_tech_code.zoner.social.post.event.PostPublishedEvent
+import com.amos_tech_code.zoner.social.post.event.PostUpdatedEvent
 import com.amos_tech_code.zoner.social.post.mapper.PostMapper
 import com.amos_tech_code.zoner.social.post.repository.PostRepository
 import com.amos_tech_code.zoner.social.post.service.PostService
@@ -23,11 +25,13 @@ import com.amos_tech_code.zoner.users.repository.UserRepository
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.Instant
 import java.util.UUID
 
+@Service
 class PostServiceImpl(
     private val postRepository: PostRepository,
 
@@ -72,11 +76,7 @@ class PostServiceImpl(
             commentsEnabled = request.commentsEnabled,
             allowSharing = request.allowSharing,
             editedAt = null,
-            publishedAt =
-                if (request.status == PostStatus.PUBLISHED)
-                    now
-                else
-                    null
+            publishedAt = if (request.status == PostStatus.PUBLISHED) now else null
         )
 
         postRepository.save(post)
@@ -111,41 +111,246 @@ class PostServiceImpl(
 
     }
 
+    @Override
+    @Transactional
     override fun update(
         userId: UUID,
         postId: UUID,
         request: UpdatePostRequest
     ): PostResponse {
-        TODO("Not yet implemented")
+
+        val business = getBusiness(userId)
+
+        val post = postRepository
+            .findByIdAndDeletedAtIsNull(postId)
+            .orElseThrow {
+                ResourceNotFoundException("Post not found.")
+            }
+
+        if (post.business!!.id != business.id) {
+            throw UnauthorizedException(
+                "You are not allowed to edit this post."
+            )
+        }
+
+        if (post.status == PostStatus.DELETED) {
+            throw InvalidRequestException(
+                "Deleted posts cannot be edited."
+            )
+        }
+
+        val media = validateMediaForUpdate(
+            userId,
+            post,
+            request.mediaIds
+        )
+
+        post.caption = request.caption?.trim()
+        post.visibility = request.visibility
+        post.commentsEnabled = request.commentsEnabled
+        post.allowSharing = request.allowSharing
+        post.editedAt = Instant.now(clock)
+
+        postRepository.save(post)
+
+        syncMedia(
+            post,
+            media
+        )
+
+        eventPublisher.publishEvent(
+            PostUpdatedEvent(
+                post.id
+            )
+        )
+
+        return PostMapper.toResponse(
+            post,
+            media.sortedBy { it.displayOrder }
+        )
+
     }
 
+    @Override
+    @Transactional
     override fun publish(
         userId: UUID,
         postId: UUID
     ): PostResponse {
-        TODO("Not yet implemented")
+
+        val business = getBusiness(userId)
+
+        val post = postRepository
+            .findByIdAndDeletedAtIsNull(postId)
+            .orElseThrow {
+                ResourceNotFoundException("Post not found.")
+            }
+
+        if (post.business!!.id != business.id) {
+            throw UnauthorizedException(
+                "You cannot publish this post."
+            )
+        }
+
+        if (post.status == PostStatus.PUBLISHED) {
+            throw InvalidRequestException(
+                "Post is already published."
+            )
+        }
+
+        post.status = PostStatus.PUBLISHED
+        post.publishedAt = Instant.now(clock)
+
+        postRepository.save(post)
+
+        eventPublisher.publishEvent(
+            PostPublishedEvent(post.id)
+        )
+
+        val media =
+            mediaRepository
+                .findByOwnerTypeAndOwnerIdAndStatusOrderByDisplayOrderAsc(
+                    MediaOwnerType.POST,
+                    post.id,
+                    MediaStatus.ACTIVE
+                )
+
+        return PostMapper.toResponse(
+            post,
+            media
+        )
+
     }
 
-    override fun delete(userId: UUID, postId: UUID) {
-        TODO("Not yet implemented")
+    @Override
+    @Transactional
+    override fun delete(
+        userId: UUID,
+        postId: UUID
+    ) {
+
+        val business = getBusiness(userId)
+
+        val post = postRepository
+            .findByIdAndDeletedAtIsNull(postId)
+            .orElseThrow {
+                ResourceNotFoundException("Post not found.")
+            }
+
+        if (post.business!!.id != business.id) {
+            throw UnauthorizedException(
+                "You cannot delete this post."
+            )
+        }
+
+        post.deletedAt = Instant.now(clock)
+        post.status = PostStatus.DELETED
+
+        postRepository.save(post)
+
+        eventPublisher.publishEvent(
+            PostDeletedEvent(post.id)
+        )
+
     }
 
-    override fun get(postId: UUID): PostResponse {
-        TODO("Not yet implemented")
+    @Override
+    @Transactional(readOnly = true)
+    override fun get(
+        postId: UUID
+    ): PostResponse {
+
+        val post = postRepository
+            .findByIdAndDeletedAtIsNull(postId)
+            .orElseThrow {
+                ResourceNotFoundException("Post not found.")
+            }
+
+        val media =
+            mediaRepository
+                .findByOwnerTypeAndOwnerIdAndStatusOrderByDisplayOrderAsc(
+                    MediaOwnerType.POST,
+                    post.id,
+                    MediaStatus.ACTIVE
+                )
+
+        return PostMapper.toResponse(
+            post,
+            media
+        )
+
     }
 
+    @Override
+    @Transactional(readOnly = true)
     override fun getBusinessPosts(
         businessId: UUID,
         pageable: Pageable
     ): Page<PostResponse> {
-        TODO("Not yet implemented")
+
+        val business = businessRepository
+            .findById(businessId)
+            .orElseThrow {
+                ResourceNotFoundException("Business not found.")
+            }
+
+        return postRepository
+            .findByBusinessAndStatusAndDeletedAtIsNullOrderByPublishedAtDesc(
+                business,
+                PostStatus.PUBLISHED,
+                pageable
+            )
+            .map { post ->
+
+                val media =
+                    mediaRepository
+                        .findByOwnerTypeAndOwnerIdAndStatusOrderByDisplayOrderAsc(
+                            MediaOwnerType.POST,
+                            post.id,
+                            MediaStatus.ACTIVE
+                        )
+
+                PostMapper.toResponse(
+                    post,
+                    media
+                )
+
+            }
+
     }
 
+    @Override
+    @Transactional(readOnly = true)
     override fun getDrafts(
         userId: UUID,
         pageable: Pageable
     ): Page<PostResponse> {
-        TODO("Not yet implemented")
+
+        val business = getBusiness(userId)
+
+        return postRepository
+            .findByBusinessAndStatusAndDeletedAtIsNullOrderByUpdatedAtDesc(
+                business,
+                PostStatus.DRAFT,
+                pageable
+            )
+            .map { post ->
+
+                val media =
+                    mediaRepository
+                        .findByOwnerTypeAndOwnerIdAndStatusOrderByDisplayOrderAsc(
+                            MediaOwnerType.POST,
+                            post.id,
+                            MediaStatus.ACTIVE
+                        )
+
+                PostMapper.toResponse(
+                    post,
+                    media
+                )
+
+            }
+
     }
 
     private fun getBusiness(
@@ -199,6 +404,52 @@ class PostServiceImpl(
 
     }
 
+    private fun validateMediaForUpdate(
+        userId: UUID,
+        post: Post,
+        mediaIds: List<UUID>
+    ): MutableList<Media> {
+
+        if (mediaIds.isEmpty()) {
+            return mutableListOf()
+        }
+
+        val media = mediaRepository
+            .findAllById(mediaIds)
+            .toMutableList()
+
+        if (media.size != mediaIds.size) {
+            throw InvalidRequestException(
+                "Some media files do not exist."
+            )
+        }
+
+        media.forEach {
+
+            when {
+
+                // already attached to this post
+                it.ownerType == MediaOwnerType.POST &&
+                        it.ownerId == post.id -> Unit
+
+                // newly uploaded by this user
+                it.ownerType == MediaOwnerType.POST &&
+                        (it.ownerId == userId || it.ownerId == post.id) &&
+                        it.status == MediaStatus.TEMPORARY -> Unit
+
+                else ->
+                    throw InvalidRequestException(
+                        "Invalid media attachment."
+                    )
+
+            }
+
+        }
+
+        return media
+
+    }
+
     private fun attachMedia(
         post: Post,
         media: List<Media>
@@ -217,6 +468,48 @@ class PostServiceImpl(
         }
 
         mediaRepository.saveAll(media)
+
+    }
+
+    private fun syncMedia(
+        post: Post,
+        requestedMedia: List<Media>
+    ) {
+
+        val existingMedia =
+            mediaRepository
+                .findByOwnerTypeAndOwnerIdAndStatusOrderByDisplayOrderAsc(
+                    MediaOwnerType.POST,
+                    post.id,
+                    MediaStatus.ACTIVE
+                )
+
+        val requestedIds = requestedMedia
+                .map { it.id }
+                .toSet()
+
+        existingMedia
+            .filter { it.id !in requestedIds }
+            .forEach {
+
+                it.ownerType = MediaOwnerType.USER
+                it.ownerId = post.business!!.user.id
+                it.status = MediaStatus.TEMPORARY
+
+            }
+
+        requestedMedia.forEachIndexed { index, media ->
+
+            media.ownerType = MediaOwnerType.POST
+            media.ownerId = post.id
+            media.status = MediaStatus.ACTIVE
+            media.displayOrder = index
+
+        }
+
+        mediaRepository.saveAll(
+            existingMedia + requestedMedia
+        )
 
     }
 

@@ -10,3 +10,11 @@ data class PostDraftCreatedEvent(
     val postId: UUID
 
 )
+
+data class PostUpdatedEvent(
+    val postId: UUID
+)
+
+data class PostDeletedEvent(
+    val postId: UUID
+)

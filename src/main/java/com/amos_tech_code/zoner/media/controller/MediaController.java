@@ -5,12 +5,14 @@ import com.amos_tech_code.zoner.media.dto.request.UploadMediaRequest;
 import com.amos_tech_code.zoner.media.dto.response.MediaResponse;
 import com.amos_tech_code.zoner.media.enums.MediaResourceType;
 import com.amos_tech_code.zoner.media.service.MediaService;
+import com.amos_tech_code.zoner.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,6 +31,8 @@ public class MediaController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<MediaResponse> upload(
+
+            @AuthenticationPrincipal AuthenticatedUser user,
 
             @RequestPart("file")
             MultipartFile file,
@@ -49,7 +53,7 @@ public class MediaController {
                 );
 
         return ResponseEntity.ok(
-                mediaService.upload(file, options)
+                mediaService.upload(file, options, user.id())
         );
 
     }

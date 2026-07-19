@@ -41,7 +41,8 @@ public class MediaServiceImpl implements MediaService {
     @Override
     public MediaResponse upload(
             MultipartFile file,
-            UploadOptions options
+            UploadOptions options,
+            UUID userId
     ) {
 
         mediaValidator.validate(file, options.folder());
@@ -66,7 +67,7 @@ public class MediaServiceImpl implements MediaService {
                         .duration(stored.duration())
                         .folder(options.folder())
                         .ownerType(options.ownerType())
-                        .ownerId(options.ownerId())
+                        .ownerId(userId) // TODO: Later fix to user options.ownerId() if not null
                         .displayOrder(options.displayOrder())
                         .status(MediaStatus.TEMPORARY)
                         .createdAt(Instant.now(clock))

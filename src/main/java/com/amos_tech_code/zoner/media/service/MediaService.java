@@ -13,7 +13,8 @@ public interface MediaService {
 
     MediaResponse upload(
             MultipartFile file,
-            UploadOptions options
+            UploadOptions options,
+            UUID userId
     );
 
     MediaResponse getById(UUID id);

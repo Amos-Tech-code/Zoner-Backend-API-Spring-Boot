@@ -21,8 +21,9 @@ interface PostRepository : JpaRepository<Post, UUID> {
         pageable: Pageable
     ): Page<Post>
 
-    fun findByBusinessAndDeletedAtIsNullOrderByUpdatedAtDesc(
+    fun findByBusinessAndStatusAndDeletedAtIsNullOrderByUpdatedAtDesc(
         business: BusinessProfile,
+        status: PostStatus,
         pageable: Pageable
     ): Page<Post>
 
