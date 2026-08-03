@@ -23,6 +23,16 @@ data class PostResponse(
 
     val media: List<PostMediaResponse>,
 
+    val commentsCount: Long,
+
+    val likesCount: Long,
+
+    val bookmarksCount: Long,
+
+    val viewsCount: Long,
+
+    val repostsCount: Long,
+
     val createdAt: Instant,
 
     val updatedAt: Instant,

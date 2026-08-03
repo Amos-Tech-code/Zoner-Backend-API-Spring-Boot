@@ -61,6 +61,16 @@ object PostMapper {
 
                 },
 
+            commentsCount = post.commentsCount,
+
+            likesCount = post.likesCount,
+
+            bookmarksCount = post.bookmarksCount,
+
+            viewsCount = post.viewsCount,
+
+            repostsCount = post.repostsCount,
+
             createdAt = post.createdAt,
 
             updatedAt = post.updatedAt,
