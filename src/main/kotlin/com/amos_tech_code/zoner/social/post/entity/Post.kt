@@ -46,6 +46,21 @@ class Post(
     var editedAt: Instant? = null,
 
     @Column
-    var publishedAt: Instant? = null
+    var publishedAt: Instant? = null,
+
+    @Column(nullable = false)
+    var commentsCount: Long = 0,
+
+    @Column(nullable = false)
+    var likesCount: Long = 0,
+
+    @Column(nullable = false)
+    var bookmarksCount: Long = 0,
+
+    @Column(nullable = false)
+    var viewsCount: Long = 0,
+
+    @Column(nullable = false)
+    var repostsCount: Long = 0,
 
 ) : BaseEntity()

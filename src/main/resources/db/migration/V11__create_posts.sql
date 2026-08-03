@@ -26,6 +26,16 @@ CREATE TABLE posts
 
     version BIGINT NOT NULL,
 
+    comments_count BIGINT NOT NULL,
+
+    likes_count BIGINT NOT NULL,
+
+    bookmarks_count BIGINT NOT NULL,
+
+    views_count BIGINT NOT NULL,
+
+    reposts_count BIGINT NOT NULL,
+
     CONSTRAINT fk_posts_business
         FOREIGN KEY (business_id)
             REFERENCES business_profiles(id)
