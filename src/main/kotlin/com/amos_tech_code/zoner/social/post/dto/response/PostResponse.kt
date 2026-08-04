@@ -33,6 +33,14 @@ data class PostResponse(
 
     val repostsCount: Long,
 
+    /*
+    val likedByMe: Boolean,
+
+    val bookmarkedByMe: Boolean,
+
+    val repostedByMe: Boolean,
+     */
+
     val createdAt: Instant,
 
     val updatedAt: Instant,

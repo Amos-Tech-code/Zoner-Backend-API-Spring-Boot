@@ -12,9 +12,18 @@ import org.springframework.scheduling.annotation.EnableAsync
 class ZonerBackendApiSpringBootApplication
 
 fun main(args: Array<String>) {
-    val dotenv = Dotenv.load() // Load .env file
-    dotenv.entries().forEach { entry ->
-        System.setProperty(entry.key, entry.value)
+
+    try {
+        val dotenv = Dotenv.configure()
+            .ignoreIfMissing()
+            .load()
+
+        dotenv.entries().forEach {
+            System.setProperty(it.key, it.value)
+        }
+    } catch (_: Exception) {
+        //
     }
+
     runApplication<ZonerBackendApiSpringBootApplication>(*args)
 }
