@@ -6,4 +6,5 @@ out
 *.iml
 README.md
 HELP.md
+AGENTS.md
 .env
