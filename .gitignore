@@ -41,7 +41,10 @@ out/
 
 ### Env ###
 .env
+.env.prod
+.env.dev
 *.env
+.env*
 
 ## Firebase
 src/main/resources/firebase/*.json
