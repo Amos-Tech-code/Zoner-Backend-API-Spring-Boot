@@ -59,6 +59,8 @@ dependencies {
     implementation("com.cloudinary:cloudinary-http44:1.39.0")
     // Jackson module for Java 8 Date and Time API
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+    // Resend API dependency
+    implementation("com.resend:resend-java:4.19.0")
 
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
